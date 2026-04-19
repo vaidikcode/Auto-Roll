@@ -19,8 +19,7 @@ import { PayslipsTab } from "@/components/payroll/tabs/payslips-tab";
 import { PaymentsTab } from "@/components/payroll/tabs/payments-tab";
 import { AssistantTab } from "@/components/payroll/tabs/assistant-tab";
 import { BillingTab } from "@/components/payroll/tabs/billing-tab";
-import { UploadEmployeesModal } from "@/components/payroll/upload-employees-modal";
-import { ChevronRight, Loader2, Play, Upload, UserPlus } from "lucide-react";
+import { ChevronRight, Loader2, Play, UserPlus } from "lucide-react";
 
 
 const ADD_PEOPLE_PROMPT =
@@ -62,7 +61,6 @@ export function PayrollWorkspace({ runId }: { runId: string }) {
 
   const [inputValue, setInputValue] = useState("");
   const [assistFocusEpoch, setAssistFocusEpoch] = useState(0);
-  const [uploadOpen, setUploadOpen] = useState(false);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleStartRun = () => {
@@ -94,11 +92,6 @@ export function PayrollWorkspace({ runId }: { runId: string }) {
     setAssistFocusEpoch((n) => n + 1);
     setTab("assistant");
   }, [setTab]);
-
-  const handleUploadDone = useCallback((count: number) => {
-    void refresh();
-    if (count > 0) setTab("roster");
-  }, [refresh, setTab]);
 
   useEffect(() => {
     if (tab !== "assistant") return;
@@ -165,17 +158,6 @@ export function PayrollWorkspace({ runId }: { runId: string }) {
                   type="button"
                   size="sm"
                   variant="secondary"
-                  onClick={() => setUploadOpen(true)}
-                  disabled={isAgentBusy}
-                  className="h-9 gap-1.5 rounded-none border-2 border-zinc-900 bg-white text-zinc-900 font-bold uppercase text-[10px] tracking-wide hover:bg-zinc-100 shadow-[3px_3px_0_0_#18181b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
-                >
-                  <Upload className="h-3.5 w-3.5" />
-                  Import CSV
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
                   onClick={handleAddPeople}
                   disabled={isAgentBusy}
                   className="h-9 gap-1.5 rounded-none border-2 border-zinc-900 bg-white text-zinc-900 font-bold uppercase text-[10px] tracking-wide hover:bg-zinc-100 shadow-[3px_3px_0_0_#18181b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
@@ -229,12 +211,6 @@ export function PayrollWorkspace({ runId }: { runId: string }) {
         </div>
       </div>
 
-      <UploadEmployeesModal
-        runId={runId}
-        open={uploadOpen}
-        onClose={() => setUploadOpen(false)}
-        onUploaded={handleUploadDone}
-      />
     </PayrollRunProvider>
   );
 }
