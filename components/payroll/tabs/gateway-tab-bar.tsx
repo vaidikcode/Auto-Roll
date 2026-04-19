@@ -9,6 +9,7 @@ import {
   FileSpreadsheet,
   Banknote,
   MessageSquare,
+  CreditCard,
 } from "lucide-react";
 
 const ICONS: Record<GatewayTabId, typeof Users> = {
@@ -18,6 +19,7 @@ const ICONS: Record<GatewayTabId, typeof Users> = {
   payslips: FileSpreadsheet,
   payments: Banknote,
   assistant: MessageSquare,
+  billing: CreditCard,
 };
 
 const ORDER: GatewayTabId[] = [
@@ -27,6 +29,7 @@ const ORDER: GatewayTabId[] = [
   "payslips",
   "payments",
   "assistant",
+  "billing",
 ];
 
 export function GatewayTabBar({

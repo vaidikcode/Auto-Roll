@@ -7,6 +7,7 @@ export const gatewayTabs = {
   payslips: "Payslips",
   payments: "Disbursements",
   assistant: "Operations desk",
+  billing: "Usage & Billing",
 } as const;
 
 export type GatewayTabId = keyof typeof gatewayTabs;
@@ -66,4 +67,6 @@ export const gatewayEmpty = {
     "Disbursement links are created after you approve the run and the MoR step finishes.",
   assistant:
     "This is where your treasury team talks to the system—plain English, full audit trail on the other tabs.",
+  billing:
+    "No usage data yet. Run a payroll cycle first, then come back here to see your charges.",
 } as const;

@@ -8,6 +8,9 @@ import { ComplianceCard } from "./tool-cards/compliance-card";
 import { InternationalPayrollCard } from "./tool-cards/international-payroll-card";
 import { ApprovalCard } from "./tool-cards/approval-card";
 import { PaymentLinkCard } from "./tool-cards/payment-link-card";
+import { UsageReportCard } from "./tool-cards/usage-report-card";
+import { BillCard } from "./tool-cards/bill-card";
+import { PricingTableCard } from "./tool-cards/pricing-table-card";
 import type { ToolState } from "./tool-cards/tool-card-shell";
 import { Bot, User } from "lucide-react";
 
@@ -180,6 +183,36 @@ export function Message({ message, onApprove, onReject, tone = "default" }: Mess
                 key={i}
                 state={toolState}
                 result={out as Parameters<typeof PaymentLinkCard>[0]["result"]}
+              />
+            );
+          }
+
+          if (p.type === "tool-get_usage_report") {
+            return (
+              <UsageReportCard
+                key={i}
+                state={toolState}
+                result={out as Parameters<typeof UsageReportCard>[0]["result"]}
+              />
+            );
+          }
+
+          if (p.type === "tool-calculate_bill") {
+            return (
+              <BillCard
+                key={i}
+                state={toolState}
+                result={out as Parameters<typeof BillCard>[0]["result"]}
+              />
+            );
+          }
+
+          if (p.type === "tool-get_pricing_table") {
+            return (
+              <PricingTableCard
+                key={i}
+                state={toolState}
+                result={out as Parameters<typeof PricingTableCard>[0]["result"]}
               />
             );
           }

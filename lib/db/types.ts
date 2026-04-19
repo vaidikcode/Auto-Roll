@@ -15,6 +15,7 @@ export type PaymentLinkStatus = "created" | "paid" | "expired" | "failed";
 
 export interface PayrollRun {
   id: string;
+  company_id: string;
   status: RunStatus;
   totals: RunTotals;
   created_at: string;
@@ -149,6 +150,48 @@ export interface ToolEvent {
   result: Record<string, unknown>;
   duration_ms: number | null;
   created_at: string;
+}
+
+// ── Billing types ────────────────────────────────────────────
+
+export interface ToolUsageSummary {
+  tool_name: string;
+  call_count: number;
+  unit_price_usd: number;
+  line_total_usd: number;
+}
+
+export interface UsageReport {
+  company_id: string;
+  period_start: string;
+  period_end: string;
+  run_count: number;
+  employee_count: number;
+  compliance_check_count: number;
+  domestic_calc_count: number;
+  tool_breakdown: ToolUsageSummary[];
+}
+
+export interface BillLineItem {
+  description: string;
+  quantity: number;
+  unit_price_usd: number;
+  subtotal_usd: number;
+}
+
+export interface BillResult {
+  company_id: string;
+  period_start: string;
+  period_end: string;
+  line_items: BillLineItem[];
+  subtotal_usd: number;
+  tax_usd: number;
+  total_usd: number;
+  generated_at: string;
+}
+
+export interface PricingTable {
+  items: Array<{ name: string; description: string; unit: string; price_usd: number }>;
 }
 
 // Full run snapshot for right panel
