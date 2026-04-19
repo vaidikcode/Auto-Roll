@@ -3,32 +3,32 @@ import type { RunStatus } from "@/lib/db/types";
 /** Plain-language labels for payroll run states (HR audience). */
 export const runStatusHr: Record<RunStatus, { title: string; hint: string }> = {
   collecting: {
-    title: "Pulling together your team list",
-    hint: "We are connecting to your payroll sources and offer letters.",
+    title: "Roster in flight",
+    hint: "We’re consolidating this cycle’s headcount from the sources on file.",
   },
   calculating: {
-    title: "Working out this period’s pay",
-    hint: "Taxes, benefits, and currency conversions are being applied.",
+    title: "Gross-to-net in progress",
+    hint: "Withholdings, benefits, and FX are being applied per person before anything is final.",
   },
   awaiting_approval: {
-    title: "Ready for your review",
-    hint: "Please confirm in the chat when the numbers look right.",
+    title: "Awaiting treasury sign-off",
+    hint: "Review the numbers on the Payslips and Compliance tabs, then confirm in Operations desk.",
   },
   approved: {
-    title: "You’ve approved this run",
-    hint: "We’re preparing how each person will be paid.",
+    title: "Signed off — preparing disbursement",
+    hint: "MoR instructions and links will follow; nothing has left your accounts yet.",
   },
   paying: {
-    title: "Setting up how people get paid",
-    hint: "Payment links are being created for each employee.",
+    title: "Issuing disbursement links",
+    hint: "Hosted checkout links are being prepared for each net amount.",
   },
   done: {
-    title: "This payroll run is complete",
-    hint: "You can revisit any person’s page from the team list.",
+    title: "Run settled on our side",
+    hint: "Retain payslips and link confirmations with your bank reconciliation pack.",
   },
   rejected: {
-    title: "This run was stopped",
-    hint: "Nothing else will be sent until you start a new run.",
+    title: "Run halted",
+    hint: "No further links or calculations will post until you open a new run.",
   },
 };
 

@@ -30,11 +30,16 @@ interface InternationalPayrollCardProps {
 export function InternationalPayrollCard({ state, result }: InternationalPayrollCardProps) {
   const isLoading = state === "input-streaming" || state === "input-available";
 
+  const summary = !isLoading && result
+    ? `Payslip ready — ${result.employee_name} · ${countryFlag(result.country)} ${result.country} · net ${formatCurrency(result.net_usd)}`
+    : undefined;
+
   return (
     <ToolCardShell
       title="International Payroll"
       icon={<Globe size={14} />}
       state={state}
+      summary={summary}
       statusLabel={isLoading ? "Calculating…" : result?.employee_name}
     >
       {isLoading ? (

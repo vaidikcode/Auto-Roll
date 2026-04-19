@@ -21,11 +21,16 @@ interface FxRateCardProps {
 export function FxRateCard({ state, result, args }: FxRateCardProps) {
   const isLoading = state === "input-streaming" || state === "input-available";
 
+  const summary = !isLoading && result
+    ? `USD → ${result.to} · ${result.rate.toLocaleString("en-US", { maximumFractionDigits: 4 })}`
+    : undefined;
+
   return (
     <ToolCardShell
       title="FX Rate"
       icon={<TrendingUp size={14} />}
       state={state}
+      summary={summary}
       statusLabel={
         isLoading
           ? `Fetching USD → ${args?.target_currency ?? "..."}`

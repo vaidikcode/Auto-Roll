@@ -2,18 +2,30 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
+/**
+ * Badges deliberately avoid box-shadow neumorphism (they'd look noisy on cards).
+ * Instead they use soft pastel fills + a hair-line border that matches the surface.
+ */
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors",
+  "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium " +
+    "tracking-tight transition-colors",
   {
     variants: {
       variant: {
-        default: "border-zinc-200 bg-zinc-100 text-zinc-700",
-        success: "border-green-200 bg-green-50 text-green-700",
-        warning: "border-yellow-200 bg-yellow-50 text-yellow-700",
-        danger: "border-red-200 bg-red-50 text-red-700",
-        info: "border-blue-200 bg-blue-50 text-blue-700",
-        outline: "border-zinc-300 bg-transparent text-zinc-600",
-        black: "border-zinc-900 bg-zinc-900 text-white",
+        default:
+          "bg-[color:var(--surface-2)] text-[color:var(--ink-muted)]",
+        success:
+          "bg-[color:var(--success-soft)] text-[#065f46]",
+        warning:
+          "bg-[color:var(--warning-soft)] text-[#92400e]",
+        danger:
+          "bg-[color:var(--danger-soft)] text-[#9f1239]",
+        info:
+          "bg-[color:var(--info-soft)] text-[#1e40af]",
+        outline:
+          "bg-transparent text-[color:var(--ink-muted)] shadow-[var(--nu-inset-sm)]",
+        black:
+          "neu-accent-fill text-white",
       },
     },
     defaultVariants: {

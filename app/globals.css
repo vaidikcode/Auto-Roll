@@ -1,101 +1,354 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Fraunces:ital,opsz,wght@0,9..144,500..700;1,9..144,400..600&family=JetBrains+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap");
 @import "tailwindcss";
 
+/* ----------------------------------------------------------------
+ * Auto-Roll — Neumorphism (Soft UI) design system
+ * Light mode, light-from-top-left.
+ * ----------------------------------------------------------------*/
+
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: "DM Sans", system-ui, sans-serif;
-  --font-serif: "Fraunces", "Georgia", serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --color-background: var(--surface);
+  --color-foreground: var(--ink);
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #09090b;
-  --card: #ffffff;
-  --card-foreground: #09090b;
-  --popover: #ffffff;
-  --popover-foreground: #09090b;
-  --primary: #09090b;
-  --primary-foreground: #fafafa;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
-  --destructive: #dc2626;
-  --destructive-foreground: #fafafa;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #09090b;
-  --radius: 0.5rem;
-  --success: #16a34a;
-  --success-bg: #f0fdf4;
-  --warning: #ca8a04;
-  --warning-bg: #fefce8;
-  --danger: #dc2626;
-  --danger-bg: #fef2f2;
+  /* Surfaces — all cards share the page color so the neumorphic shadow reads
+   * as "carved from the same material". */
+  --surface: #eef1f6;
+  --surface-2: #e6eaf0;
+  --surface-elevated: #f2f5fa;
+
+  /* Typography */
+  --ink: #1b2230;
+  --ink-muted: #54607a;
+  --ink-soft: #8a95ad;
+
+  /* Accent — soft indigo → violet gradient (fintech / creative) */
+  --accent-from: #6366f1;
+  --accent-to: #a855f7;
+  --accent-ink: #5b5cf0;
+  --accent-glow: rgba(99, 102, 241, 0.22);
+
+  /* State hues — pastel for badges only */
+  --success: #10b981;
+  --success-soft: #d6f3e6;
+  --warning: #d97706;
+  --warning-soft: #fdecc8;
+  --danger: #e11d48;
+  --danger-soft: #fbd8df;
   --info: #2563eb;
-  --info-bg: #eff6ff;
+  --info-soft: #dbe6ff;
+
+  /* Shadow components — light source top-left, subtle & professional */
+  --nu-light: rgba(255, 255, 255, 0.95);
+  --nu-dark: rgba(166, 177, 200, 0.38);
+  --nu-dark-soft: rgba(166, 177, 200, 0.26);
+
+  /* Composite shadows */
+  --nu-raised:
+    9px 9px 22px var(--nu-dark),
+    -9px -9px 22px var(--nu-light);
+  --nu-raised-sm:
+    5px 5px 12px var(--nu-dark-soft),
+    -5px -5px 12px var(--nu-light);
+  --nu-raised-xs:
+    3px 3px 7px var(--nu-dark-soft),
+    -3px -3px 7px var(--nu-light);
+  --nu-inset:
+    inset 4px 4px 8px var(--nu-dark),
+    inset -4px -4px 8px var(--nu-light);
+  --nu-inset-sm:
+    inset 2px 2px 5px var(--nu-dark-soft),
+    inset -2px -2px 5px var(--nu-light);
+  --nu-press:
+    inset 5px 5px 10px rgba(166, 177, 200, 0.45),
+    inset -5px -5px 10px rgba(255, 255, 255, 0.85);
+
+  /* Legacy tokens consumed elsewhere */
+  --background: var(--surface);
+  --foreground: var(--ink);
+  --border: rgba(27, 34, 48, 0.08);
+  --input: rgba(27, 34, 48, 0.08);
+  --ring: var(--accent-ink);
+  --radius: 14px;
+  --success-bg: var(--success-soft);
+  --warning-bg: var(--warning-soft);
+  --danger-bg: var(--danger-soft);
+  --info-bg: var(--info-soft);
 }
 
 * {
-  border-color: var(--border);
   box-sizing: border-box;
 }
 
+html, body {
+  background: var(--surface);
+  color: var(--ink);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: "DM Sans", system-ui, sans-serif;
-  font-feature-settings: "rlig" 1, "calt" 1;
+  font-family: var(--font-sans);
+  font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.005em;
 }
 
 code, pre, .font-mono {
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-mono);
 }
 
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+/* Subtle ambient gradient behind the page for extra warmth */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(99, 102, 241, 0.08), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(168, 85, 247, 0.06), transparent 60%);
+}
 
+/* Payroll vault shell — mute the default body wash */
+body:has(.ar-vault)::before {
+  opacity: 0;
+}
+
+/* ------------------------------------------------------------------
+ * Neumorphism utilities
+ * Apply these instead of hard borders/shadows.
+ * ------------------------------------------------------------------*/
+
+.neu-surface {
+  background: var(--surface);
+}
+
+.neu-raised {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--nu-raised);
+  transition: box-shadow 240ms ease, transform 240ms ease;
+}
+
+.neu-raised-sm {
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: var(--nu-raised-sm);
+  transition: box-shadow 240ms ease, transform 240ms ease;
+}
+
+.neu-raised-xs {
+  background: var(--surface);
+  border-radius: 10px;
+  box-shadow: var(--nu-raised-xs);
+  transition: box-shadow 220ms ease, transform 220ms ease;
+}
+
+.neu-inset {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--nu-inset);
+  transition: box-shadow 240ms ease;
+}
+
+.neu-inset-sm {
+  background: var(--surface);
+  border-radius: 10px;
+  box-shadow: var(--nu-inset-sm);
+  transition: box-shadow 240ms ease;
+}
+
+/* Interactive raised card: slight lift on hover, press on active */
+.neu-lift {
+  transition: box-shadow 240ms ease, transform 240ms ease;
+}
+.neu-lift:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    11px 11px 26px var(--nu-dark),
+    -11px -11px 26px var(--nu-light);
+}
+.neu-lift:active {
+  transform: translateY(0);
+  box-shadow: var(--nu-inset-sm);
+}
+
+/* Pressed (inset) — apply for toggles / active tabs */
+.neu-pressed {
+  background: var(--surface);
+  box-shadow: var(--nu-press);
+}
+
+/* Accent gradient text + fill */
+.neu-accent-text {
+  background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.neu-accent-fill {
+  background: linear-gradient(135deg, var(--accent-from) 0%, var(--accent-to) 100%);
+  color: #fff;
+}
+
+/* Focus ring — soft accent glow, replaces harsh outlines */
+.neu-focus:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--nu-inset-sm),
+    0 0 0 4px var(--accent-glow);
+}
+
+/* Glass-neumorphism hybrid for popovers / modals */
+.neu-glass {
+  background: rgba(242, 245, 250, 0.78);
+  backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  border-radius: var(--radius);
+  box-shadow:
+    14px 14px 36px var(--nu-dark),
+    -14px -14px 36px var(--nu-light);
+}
+
+/* ------------------------------------------------------------------
+ * Scrollbar — soft inset channel
+ * ------------------------------------------------------------------*/
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track {
+  background: var(--surface);
+  border-radius: 10px;
+  box-shadow: var(--nu-inset-sm);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #c7cfdc, #aeb7c6);
+  border-radius: 10px;
+  border: 2px solid var(--surface);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+}
+
+/* ------------------------------------------------------------------
+ * Animations
+ * ------------------------------------------------------------------*/
 @keyframes shimmer {
   0% { background-position: -200px 0; }
   100% { background-position: calc(200px + 100%) 0; }
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #f4f4f5 25%, #e4e4e7 50%, #f4f4f5 75%);
+  background: linear-gradient(
+    90deg,
+    rgba(166, 177, 200, 0.12) 25%,
+    rgba(166, 177, 200, 0.22) 50%,
+    rgba(166, 177, 200, 0.12) 75%
+  );
   background-size: 200px 100%;
-  animation: shimmer 1.5s infinite;
+  animation: shimmer 1.4s infinite;
+  border-radius: 10px;
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.85); }
 }
-
-.pulse-dot {
-  animation: pulse-dot 1.5s ease-in-out infinite;
-}
+.pulse-dot { animation: pulse-dot 1.5s ease-in-out infinite; }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeIn 260ms ease-out forwards; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { animation: spin 0.75s linear infinite; }
+
+/* Selection */
+::selection {
+  background: var(--accent-glow);
+  color: var(--ink);
 }
 
-.fade-in {
-  animation: fadeIn 0.2s ease-out forwards;
+/* ==================================================================
+ * Vault — solid high-contrast payroll shell (no mesh / no sheen)
+ * ================================================================== */
+
+.ar-font-display {
+  font-family: "Syne", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+/* Light vault: cool gray canvas + ink on white panels */
+.ar-vault {
+  --vault-ink: #18181b;
+  --vault-muted: #52525b;
+  --vault-dim: #71717a;
+  --vault-surface: #e4e4e9;
+  --vault-panel: #ffffff;
+  --vault-accent: #d4f520;
+  --vault-shadow: #18181b;
+  --ink: var(--vault-ink);
+  --ink-muted: var(--vault-muted);
+  --ink-soft: var(--vault-dim);
+  position: relative;
+  isolation: isolate;
+  background: var(--vault-surface);
+  color: var(--vault-ink);
 }
 
-.spinner {
-  animation: spin 0.75s linear infinite;
+.ar-vault-main {
+  position: relative;
+  z-index: 1;
+}
+
+/* Tool cards / neumorphic tokens read as flat ink inside vault */
+.ar-vault .neu-raised-sm,
+.ar-vault .neu-raised-xs {
+  background: #ffffff !important;
+  box-shadow: none !important;
+  border: 2px solid #18181b !important;
+  color: var(--vault-ink) !important;
+  border-radius: 2px !important;
+}
+
+.ar-vault .neu-raised {
+  background: #ffffff !important;
+  box-shadow: 4px 4px 0 0 var(--vault-shadow) !important;
+  border: 2px solid #18181b !important;
+  color: var(--vault-ink) !important;
+  border-radius: 2px !important;
+}
+
+.ar-vault .skeleton {
+  background: linear-gradient(
+    90deg,
+    #d4d4d8 25%,
+    #e4e4e9 50%,
+    #d4d4d8 75%
+  ) !important;
+  border-radius: 2px !important;
+}
+
+/* Optional: very short fade when explicitly needed */
+@keyframes ar-vault-fade-kf {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.ar-vault-fade {
+  animation: ar-vault-fade-kf 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ar-vault-fade,
+  .fade-in,
+  .skeleton {
+    animation: none !important;
+  }
+  .spinner {
+    animation-duration: 1.2s;
+  }
 }

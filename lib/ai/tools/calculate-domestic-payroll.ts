@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { agentProcessingDelay } from "@/lib/ai/agent-processing-delay";
 import { jsonSafe } from "@/lib/ai/json-safe";
 import { getAdminClient } from "@/lib/db/client";
 import { calculateDomesticPayroll } from "@/lib/payroll/domestic";
@@ -13,6 +14,7 @@ export function makeCalculateDomesticPayrollTool(runId: string) {
       employee_id: z.string().describe("UUID of the employee to calculate payroll for"),
     }),
     execute: async ({ employee_id }: { employee_id: string }) => {
+      await agentProcessingDelay();
       const db = getAdminClient();
       const start = Date.now();
 

@@ -241,5 +241,5 @@ Each agent tool call renders as a rich UI component, not text:
 
 - No authentication — single-user demo mode
 - Payroll calculations use 2026 federal brackets and simplified state flat rates (demo accuracy)
-- Bag integration falls back to mock links when `BAG_API_KEY` is unset
-- Tavily compliance search falls back to curated static data per country
+- Bag: by default demo hosted-style links are generated (no API call). Set `BAG_USE_REAL=1` and `BAG_API_KEY` to use the live Bag API.
+- Cross-border compliance uses Tavily when `TAVILY_API_KEY` is set (required for international checks).
