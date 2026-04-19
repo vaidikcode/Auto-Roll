@@ -138,18 +138,36 @@ export function makeCollectEmployeesTool(runId: string) {
       const db = getAdminClient();
       const start = Date.now();
 
-      const { data: inserted, error } = await db
+      // Check if employees were already uploaded for this run (via CSV/Excel import)
+      const { data: existing } = await db
         .from("employees")
-        .insert(MOCK_EMPLOYEES.map((e) => ({ ...e, run_id: runId })))
-        .select();
+        .select("*")
+        .eq("run_id", runId);
 
-      if (error) throw new Error(`Failed to insert employees: ${error.message}`);
+      let employees: Employee[];
+
+      if (existing && existing.length > 0) {
+        // Use the uploaded / previously collected employees — do NOT overwrite them
+        employees = existing as Employee[];
+      } else {
+        // No uploaded data — insert demo roster so the agent can still run
+        const { data: inserted, error } = await db
+          .from("employees")
+          .insert(MOCK_EMPLOYEES.map((e) => ({ ...e, run_id: runId })))
+          .select();
+        if (error) throw new Error(`Failed to insert employees: ${error.message}`);
+        employees = (inserted ?? []) as Employee[];
+      }
+
+      const sources = existing && existing.length > 0
+        ? [...new Set(employees.map((e) => e.source).filter(Boolean))]
+        : ["Rippling", "Gusto", "Deel", "PDF — Q2 Offer Letters.pdf"];
 
       await db.from("tool_events").insert({
         run_id: runId,
         tool_name: "collect_employees",
         args: {},
-        result: { count: inserted?.length ?? 0 },
+        result: { count: employees.length },
         duration_ms: Date.now() - start,
       });
 
@@ -158,11 +176,14 @@ export function makeCollectEmployeesTool(runId: string) {
         .update({ status: "calculating" })
         .eq("id", runId);
 
+      const domestic_count = employees.filter((e) => e.employment_type === "domestic").length;
+      const international_count = employees.filter((e) => e.employment_type === "international").length;
+
       return jsonSafe({
-        employees: inserted ?? [],
-        sources_checked: ["Rippling", "Gusto", "Deel", "PDF — Q2 Offer Letters.pdf"],
-        domestic_count: MOCK_EMPLOYEES.filter((e) => e.employment_type === "domestic").length,
-        international_count: MOCK_EMPLOYEES.filter((e) => e.employment_type === "international").length,
+        employees,
+        sources_checked: sources,
+        domestic_count,
+        international_count,
       });
     },
   });
