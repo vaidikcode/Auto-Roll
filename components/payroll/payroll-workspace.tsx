@@ -18,9 +18,9 @@ import { ComplianceTab } from "@/components/payroll/tabs/compliance-tab";
 import { PayslipsTab } from "@/components/payroll/tabs/payslips-tab";
 import { PaymentsTab } from "@/components/payroll/tabs/payments-tab";
 import { AssistantTab } from "@/components/payroll/tabs/assistant-tab";
-
 import { BillingTab } from "@/components/payroll/tabs/billing-tab";
-import { ChevronRight, Loader2, Play, UserPlus } from "lucide-react";
+import { UploadEmployeesModal } from "@/components/payroll/upload-employees-modal";
+import { ChevronRight, Loader2, Play, Upload, UserPlus } from "lucide-react";
 
 
 const ADD_PEOPLE_PROMPT =
