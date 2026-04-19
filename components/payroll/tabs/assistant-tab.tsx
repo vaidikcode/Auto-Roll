@@ -41,46 +41,19 @@ export function AssistantTab({
   }, [messages]);
 
   return (
-    <div className="max-w-3xl mx-auto pb-8 flex flex-col h-[min(100%,calc(100dvh-9rem))] min-h-[420px] ar-vault-fade">
-      <header className="mb-5 shrink-0 border-b-2 border-zinc-300 pb-4">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Operations</p>
-        <h2 className="ar-font-display text-2xl font-black text-zinc-900 tracking-tight mt-1">
-          Treasury desk
-        </h2>
-        <p className="text-sm text-zinc-600 mt-2 leading-relaxed">{gatewayEmpty.assistant}</p>
-      </header>
-
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-xl border border-zinc-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
-        <div className="px-4 py-3 border-b border-zinc-200 flex justify-between items-center bg-zinc-50/80">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">
-            {busy ? (
-              <span className="inline-flex items-center gap-2 text-zinc-900">
-                <Loader2 className="h-3.5 w-3.5 spinner" />
-                Streaming
-              </span>
-            ) : (
-              "Ready"
-            )}
-          </span>
-          {busy && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onStop}
-              className="rounded-lg border border-zinc-300 text-zinc-800 bg-white hover:bg-zinc-100 text-[10px] font-bold uppercase h-8"
-            >
-              Stop
-            </Button>
-          )}
-        </div>
+    <div className="flex flex-col h-[calc(100dvh-8.5rem)] min-h-[420px] ar-vault-fade -mx-4 sm:-mx-6 -my-8">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white border-t border-zinc-200">
         <ScrollArea className="flex-1 min-h-[280px] bg-white [&_[data-radix-scroll-area-viewport]]:outline-none">
-          <div className="p-4 space-y-4">
+          <div className="max-w-4xl mx-auto px-4 sm:px-8 py-6 space-y-4">
             {messages.length === 0 ? (
-              <p className="text-sm text-zinc-600 text-center py-14 px-4 leading-relaxed">
-                Use <strong className="text-zinc-900">Add people</strong> in the bar above to sync HR,
-                or describe changes here. Enter sends; Shift+Enter for a new line.
-              </p>
+              <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+                <div className="h-14 w-14 border-2 border-zinc-900 bg-[color:var(--vault-accent)] flex items-center justify-center font-black text-lg text-zinc-900">
+                  AR
+                </div>
+                <p className="text-sm text-zinc-500 max-w-sm leading-relaxed">
+                  {gatewayEmpty.assistant}
+                </p>
+              </div>
             ) : (
               messages.map((msg) => (
                 <Message
@@ -95,30 +68,59 @@ export function AssistantTab({
             <div ref={endRef} />
           </div>
         </ScrollArea>
-        <div className="p-3 border-t border-zinc-200 flex gap-2 bg-zinc-50/80">
-          <textarea
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                onSend();
-              }
-            }}
-            rows={2}
-            placeholder="Instructions to the payroll agent…"
-            className="flex-1 resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-400 focus:ring-0"
-          />
-          <Button
-            type="button"
-            className="h-[52px] w-[52px] shrink-0 self-end rounded-lg border border-zinc-900 bg-[color:var(--vault-accent)] text-zinc-900 hover:brightness-[0.93] shadow-[0_2px_0_0_#18181b] active:translate-y-px active:shadow-none"
-            size="icon"
-            onClick={onSend}
-            disabled={!inputValue.trim() || busy}
-          >
-            {busy ? <Loader2 className="h-4 w-4 spinner" /> : <Send className="h-4 w-4" />}
-          </Button>
+
+        {/* Compose bar */}
+        <div className="border-t border-zinc-200 bg-white px-4 sm:px-8 py-3">
+          <div className="max-w-4xl mx-auto flex gap-3 items-end">
+            <textarea
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  onSend();
+                }
+              }}
+              rows={2}
+              placeholder="Instructions to the payroll agent…"
+              className="flex-1 resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-0 focus:bg-white transition-colors"
+            />
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              {busy && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onStop}
+                  className="rounded-lg border border-zinc-300 text-zinc-700 bg-white hover:bg-zinc-100 text-[10px] font-bold uppercase h-8 px-3"
+                >
+                  Stop
+                </Button>
+              )}
+              <Button
+                type="button"
+                className="h-11 w-11 rounded-lg border border-zinc-900 bg-[color:var(--vault-accent)] text-zinc-900 hover:brightness-[0.93] shadow-[0_2px_0_0_#18181b] active:translate-y-px active:shadow-none disabled:opacity-40"
+                size="icon"
+                onClick={onSend}
+                disabled={!inputValue.trim() || busy}
+              >
+                {busy ? <Loader2 className="h-4 w-4 spinner" /> : <Send className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+
+          {/* Status line */}
+          <div className="max-w-4xl mx-auto mt-2 flex items-center gap-2">
+            {busy ? (
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                <Loader2 className="h-3 w-3 spinner text-zinc-900" />
+                Agent running
+              </span>
+            ) : (
+              <span className="text-[10px] text-zinc-400">Enter to send · Shift+Enter for new line</span>
+            )}
+          </div>
         </div>
       </div>
     </div>

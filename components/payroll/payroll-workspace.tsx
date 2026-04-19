@@ -165,10 +165,11 @@ export function PayrollWorkspace({ runId }: { runId: string }) {
                 </Button>
                 <Button
                   type="button"
+                  variant="ghost"
                   size="sm"
                   onClick={handleStartRun}
                   disabled={isAgentBusy}
-                  className="h-9 gap-1.5 rounded-none border-2 border-zinc-900 bg-[color:var(--vault-accent)] text-zinc-900 font-black uppercase text-[10px] tracking-wide hover:brightness-[0.93] shadow-[3px_3px_0_0_#18181b] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all disabled:opacity-50 disabled:shadow-[3px_3px_0_0_#18181b] disabled:translate-x-0 disabled:translate-y-0"
+                  className="h-9 gap-1.5 rounded-none border-2 border-zinc-900 !bg-zinc-900 !text-white font-black uppercase text-[10px] tracking-wide hover:!bg-zinc-800 hover:!text-white shadow-[3px_3px_0_0_rgba(0,0,0,0.4)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all disabled:opacity-40 disabled:pointer-events-none"
                 >
                   {isAgentBusy ? (
                     <Loader2 className="h-3.5 w-3.5 spinner" />
