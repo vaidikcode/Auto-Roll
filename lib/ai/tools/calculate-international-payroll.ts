@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { agentProcessingDelay } from "@/lib/ai/agent-processing-delay";
 import { jsonSafe } from "@/lib/ai/json-safe";
 import { getAdminClient } from "@/lib/db/client";
 import { calculateInternationalPayroll } from "@/lib/payroll/international";
@@ -14,6 +15,7 @@ export function makeCalculateInternationalPayrollTool(runId: string) {
       fx_rate: z.number().describe("USD to local currency exchange rate (from fetch_fx_rate tool)"),
     }),
     execute: async ({ employee_id, fx_rate }: { employee_id: string; fx_rate: number }) => {
+      await agentProcessingDelay();
       const db = getAdminClient();
       const start = Date.now();
 

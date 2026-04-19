@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { agentProcessingDelay } from "@/lib/ai/agent-processing-delay";
 import { jsonSafe } from "@/lib/ai/json-safe";
 import { getAdminClient } from "@/lib/db/client";
 
@@ -14,6 +15,7 @@ export function makeFetchFxRateTool(runId: string) {
       target_currency: z.string().describe("3-letter ISO currency code, e.g. INR, EUR, GBP"),
     }),
     execute: async ({ target_currency }: { target_currency: string }) => {
+      await agentProcessingDelay();
       const db = getAdminClient();
       const start = Date.now();
       const cacheKey = target_currency.toUpperCase();

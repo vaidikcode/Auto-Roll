@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { getAdminClient } from "@/lib/db/client";
+import { agentProcessingDelay } from "@/lib/ai/agent-processing-delay";
 import { jsonSafe } from "@/lib/ai/json-safe";
 import type { Employee } from "@/lib/db/types";
 
@@ -133,6 +134,7 @@ export function makeCollectEmployeesTool(runId: string) {
       "Collect all employees from connected HR platforms (Rippling, Gusto, Deel) and parse any pending offer letter PDFs. Returns the full employee roster for this payroll run.",
     inputSchema: z.object({}),
     execute: async () => {
+      await agentProcessingDelay();
       const db = getAdminClient();
       const start = Date.now();
 

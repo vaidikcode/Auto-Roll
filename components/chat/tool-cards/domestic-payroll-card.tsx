@@ -46,7 +46,7 @@ function Row({
     <div
       className={`flex items-center justify-between py-1.5 px-3 ${
         net
-          ? "bg-zinc-900 text-white rounded-lg mt-1"
+          ? "bg-zinc-800 text-white rounded-lg mt-1"
           : highlight
           ? "bg-zinc-50 rounded"
           : ""
@@ -72,11 +72,16 @@ function Row({
 export function DomesticPayrollCard({ state, result }: DomesticPayrollCardProps) {
   const isLoading = state === "input-streaming" || state === "input-available";
 
+  const summary = !isLoading && result
+    ? `Payslip ready — ${result.employee_name} · net ${formatCurrency(result.net_usd)}`
+    : undefined;
+
   return (
     <ToolCardShell
       title="Domestic Payroll"
       icon={<Calculator size={14} />}
       state={state}
+      summary={summary}
       statusLabel={isLoading ? "Calculating…" : result?.employee_name}
     >
       {isLoading ? (

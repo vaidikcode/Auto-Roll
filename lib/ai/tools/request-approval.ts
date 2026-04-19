@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { agentProcessingDelay } from "@/lib/ai/agent-processing-delay";
 import { jsonSafe } from "@/lib/ai/json-safe";
 import { getAdminClient } from "@/lib/db/client";
 
@@ -9,6 +10,7 @@ export function makeRequestApprovalTool(runId: string) {
       "Generate a payroll run summary and request human approval before initiating payments. Sets run status to awaiting_approval.",
     inputSchema: z.object({}),
     execute: async () => {
+      await agentProcessingDelay();
       const db = getAdminClient();
       const start = Date.now();
 

@@ -36,14 +36,33 @@ const CATEGORY_LABELS = {
   regulatory: "Legal",
 };
 
+const SUMMARY_CHAR_LIMIT = 240;
+const STEP_CHAR_LIMIT = 140;
+
+function truncate(text: string, limit: number): string {
+  if (!text) return "";
+  const trimmed = text.trim();
+  if (trimmed.length <= limit) return trimmed;
+  const slice = trimmed.slice(0, limit);
+  const lastSpace = slice.lastIndexOf(" ");
+  return `${slice.slice(0, lastSpace > limit * 0.6 ? lastSpace : limit).trimEnd()}…`;
+}
+
 export function ComplianceCard({ state, result }: ComplianceCardProps) {
   const isLoading = state === "input-streaming" || state === "input-available";
+
+  const cardSummary = !isLoading && result
+    ? `${result.employee_name} · ${result.country} · ${
+        result.status === "flagged" ? "⚠ flagged" : "clear"
+      } · ${result.actionable_steps.length} action${result.actionable_steps.length === 1 ? "" : "s"}`
+    : undefined;
 
   return (
     <ToolCardShell
       title="Cross-Border Compliance"
       icon={<Shield size={14} />}
       state={state}
+      summary={cardSummary}
       statusLabel={
         isLoading
           ? "Searching regulations…"
@@ -92,8 +111,10 @@ export function ComplianceCard({ state, result }: ComplianceCardProps) {
             </div>
           </div>
 
-          {/* Summary */}
-          <p className="text-xs text-zinc-600 leading-relaxed">{result.summary}</p>
+          {/* Summary — hard-capped so the compliance essay doesn't blow up the chat */}
+          <p className="text-xs text-zinc-600 leading-relaxed">
+            {truncate(result.summary, SUMMARY_CHAR_LIMIT)}
+          </p>
 
           {/* Sources */}
           {result.sources.length > 0 && (
@@ -120,7 +141,7 @@ export function ComplianceCard({ state, result }: ComplianceCardProps) {
           {result.actionable_steps.length > 0 && (
             <div className="space-y-1">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-                Action Items
+                Action Items · {result.actionable_steps.length}
               </p>
               <div className="space-y-1.5">
                 {result.actionable_steps.map((step) => (
@@ -135,7 +156,9 @@ export function ComplianceCard({ state, result }: ComplianceCardProps) {
                         <CheckCircle size={11} className="text-zinc-400" />
                       )}
                     </div>
-                    <p className="text-xs text-zinc-700 flex-1 leading-snug">{step.description}</p>
+                    <p className="text-xs text-zinc-700 flex-1 leading-snug">
+                      {truncate(step.description, STEP_CHAR_LIMIT)}
+                    </p>
                     <div className="flex gap-1 shrink-0">
                       <Badge variant={PRIORITY_COLORS[step.priority]} className="text-[9px] px-1.5 py-0">
                         {step.priority}

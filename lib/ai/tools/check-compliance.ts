@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { agentProcessingDelay } from "@/lib/ai/agent-processing-delay";
 import { jsonSafe } from "@/lib/ai/json-safe";
 import { getAdminClient } from "@/lib/db/client";
 import type { Employee, ActionableStep, ComplianceSource } from "@/lib/db/types";
@@ -139,6 +140,7 @@ export function makeCheckComplianceTool(runId: string) {
       amount_usd: z.number().describe("Annual USD amount to be paid"),
     }),
     execute: async ({ employee_id, amount_usd }: { employee_id: string; amount_usd: number }) => {
+      await agentProcessingDelay();
       const db = getAdminClient();
       const start = Date.now();
 

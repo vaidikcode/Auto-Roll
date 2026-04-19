@@ -55,35 +55,41 @@ export function PaymentLinkCard({ state, result }: PaymentLinkCardProps) {
       ) : result ? (
         <div className="space-y-3">
           {/* Employee header */}
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-full bg-zinc-100 flex items-center justify-center text-sm font-semibold text-zinc-600">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-xl neu-inset-sm flex items-center justify-center text-sm font-semibold text-[color:var(--ink-muted)]">
               {result.employee_name[0]}
             </div>
             <div>
-              <div className="text-sm font-semibold text-zinc-900">{result.employee_name}</div>
-              <div className="flex items-center gap-1 text-[10px] text-zinc-400">
+              <div className="text-sm font-semibold text-[color:var(--ink)]">
+                {result.employee_name}
+              </div>
+              <div className="flex items-center gap-1 text-[10px] text-[color:var(--ink-soft)]">
                 {countryFlag(result.country)} {result.country}
               </div>
             </div>
             <div className="ml-auto text-right">
-              <div className="text-base font-bold font-mono text-zinc-900">
+              <div className="text-base font-semibold font-mono neu-accent-text">
                 {formatCurrency(result.amount_usd)}
               </div>
-              <div className="text-[10px] text-zinc-400">USD</div>
+              <div className="text-[10px] text-[color:var(--ink-soft)]">USD</div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 p-2.5 rounded-lg bg-zinc-50 border border-zinc-200">
-            <Link2 size={12} className="text-zinc-400 shrink-0" />
+          <div className="flex items-center gap-2 p-3 rounded-xl neu-inset-sm">
+            <Link2 size={12} className="text-[color:var(--ink-soft)] shrink-0" />
             <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-medium text-zinc-400 uppercase tracking-wide">
+              <div className="text-[10px] font-semibold text-[color:var(--ink-soft)] uppercase tracking-[0.14em]">
                 Hosted checkout
               </div>
-              <span className="text-xs text-zinc-700 truncate block" title={result.url}>
+              <span
+                className="text-xs text-[color:var(--ink-muted)] truncate block"
+                title={result.url}
+              >
                 {(() => {
                   try {
                     const u = new URL(result.url);
-                    const tail = u.pathname.length > 22 ? `${u.pathname.slice(0, 14)}…` : u.pathname;
+                    const tail =
+                      u.pathname.length > 22 ? `${u.pathname.slice(0, 14)}…` : u.pathname;
                     return `${u.host}${tail}`;
                   } catch {
                     return result.url.slice(0, 48);
@@ -96,12 +102,16 @@ export function PaymentLinkCard({ state, result }: PaymentLinkCardProps) {
           {/* Actions */}
           <div className="flex gap-2">
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
               className="flex-1 gap-1.5 text-xs"
               onClick={handleCopy}
             >
-              {copied ? <Check size={12} className="text-green-600" /> : <Copy size={12} />}
+              {copied ? (
+                <Check size={12} className="text-[color:var(--success)]" />
+              ) : (
+                <Copy size={12} />
+              )}
               {copied ? "Copied!" : "Copy Link"}
             </Button>
             <Button
@@ -117,17 +127,16 @@ export function PaymentLinkCard({ state, result }: PaymentLinkCardProps) {
             </Button>
           </div>
 
-          {/* Compliance badge */}
+          {/* Compliance callout */}
           {result.compliance_status === "flagged" && result.compliance_steps_count > 0 && (
-            <div className="flex items-center gap-1.5 p-2 rounded bg-yellow-50 border border-yellow-200">
-              <Shield size={11} className="text-yellow-600" />
-              <span className="text-xs text-yellow-800">
+            <div className="flex items-center gap-2 p-3 rounded-xl neu-inset-sm">
+              <Shield size={12} className="text-[color:var(--warning)]" />
+              <span className="text-xs text-[color:var(--ink-muted)]">
                 {result.compliance_steps_count} compliance action item
-                {result.compliance_steps_count > 1 ? "s" : ""} required before payment clears
+                {result.compliance_steps_count > 1 ? "s" : ""} to review before payment clears
               </span>
             </div>
           )}
-
         </div>
       ) : null}
     </ToolCardShell>

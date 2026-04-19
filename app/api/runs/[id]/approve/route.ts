@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/db/client";
+import { ensurePaymentLinkForEmployee } from "@/lib/payroll/ensure-payment-link";
 
 export async function POST(
   _req: NextRequest,
@@ -42,7 +43,53 @@ export async function POST(
     duration_ms: 0,
   });
 
-  return NextResponse.json({ success: true, status: "approved" });
+  const { data: items } = await db
+    .from("payroll_items")
+    .select("employee_id")
+    .eq("run_id", id);
+
+  const employeeIds = [...new Set((items ?? []).map((r) => r.employee_id))];
+  const linkErrors: string[] = [];
+  let created = 0;
+  let skipped = 0;
+
+  for (const employeeId of employeeIds) {
+    try {
+      const r = await ensurePaymentLinkForEmployee(id, employeeId);
+      if (r.already_existed) skipped += 1;
+      else created += 1;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      linkErrors.push(`${employeeId}: ${msg}`);
+    }
+  }
+
+  if (linkErrors.length === 0) {
+    const { error: doneErr } = await db
+      .from("payroll_runs")
+      .update({ status: "done" })
+      .eq("id", id);
+
+    if (doneErr) {
+      return NextResponse.json(
+        {
+          error: doneErr.message,
+          links_created: created,
+          links_skipped: skipped,
+          link_errors: linkErrors,
+        },
+        { status: 500 }
+      );
+    }
+  }
+
+  return NextResponse.json({
+    success: linkErrors.length === 0,
+    status: linkErrors.length === 0 ? "done" : "approved",
+    links_created: created,
+    links_skipped: skipped,
+    link_errors: linkErrors,
+  });
 }
 
 export async function DELETE(

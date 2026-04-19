@@ -15,6 +15,8 @@ interface MessageProps {
   message: UIMessage;
   onApprove?: () => void;
   onReject?: () => void;
+  /** Solid high-contrast bubbles on payroll Operations desk */
+  tone?: "default" | "cosmos" | "vault";
 }
 
 type MessagePart = UIMessage["parts"][number];
@@ -42,16 +44,29 @@ function getToolState(part: MessagePart & { type: string }): ToolState {
   return "output-available";
 }
 
-export function Message({ message, onApprove, onReject }: MessageProps) {
+export function Message({ message, onApprove, onReject, tone = "default" }: MessageProps) {
   const isAssistant = message.role === "assistant";
+  const cosmos = tone === "cosmos";
+  const vault = tone === "vault";
 
   return (
     <div className={`flex gap-3 ${isAssistant ? "" : "flex-row-reverse"}`}>
       {/* Avatar */}
       <div
-        className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-          isAssistant ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600"
-        }`}
+        className={[
+          "h-8 w-8 flex items-center justify-center shrink-0 mt-0.5 border-2",
+          vault
+            ? isAssistant
+              ? "rounded-lg border-zinc-900 bg-[#e8ff5a] text-black"
+              : "rounded-lg border-zinc-200 bg-white text-zinc-900"
+            : cosmos
+              ? isAssistant
+                ? "rounded-xl bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.55)] border-transparent"
+                : "rounded-xl bg-slate-700 text-slate-100 border-white/15"
+              : isAssistant
+                ? "rounded-xl neu-accent-fill text-white border-transparent shadow-[3px_3px_8px_rgba(99,102,241,0.32),-3px_-3px_8px_rgba(255,255,255,0.9)]"
+                : "rounded-xl neu-raised-xs text-[color:var(--ink-muted)] border-transparent",
+        ].join(" ")}
       >
         {isAssistant ? <Bot size={14} /> : <User size={14} />}
       </div>
@@ -65,11 +80,20 @@ export function Message({ message, onApprove, onReject }: MessageProps) {
             return (
               <div
                 key={i}
-                className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                  isAssistant
-                    ? "bg-zinc-50 border border-zinc-200 text-zinc-800 rounded-tl-sm"
-                    : "bg-zinc-900 text-white rounded-tr-sm"
-                }`}
+                className={[
+                  "px-4 py-3 text-sm leading-relaxed border-2",
+                  vault
+                    ? isAssistant
+                      ? "rounded-xl rounded-tl-sm border border-zinc-200 bg-white text-zinc-900 shadow-sm"
+                      : "rounded-xl rounded-tr-sm border border-zinc-300 bg-[#e8ff5a] text-black shadow-sm"
+                    : cosmos
+                      ? isAssistant
+                        ? "rounded-2xl rounded-tl-md border-cyan-500/30 bg-slate-900/90 text-slate-100 shadow-[0_0_24px_rgba(34,211,238,0.12)]"
+                        : "rounded-2xl rounded-tr-md bg-gradient-to-br from-fuchsia-600 via-violet-600 to-cyan-500 text-white shadow-[0_0_28px_rgba(217,70,239,0.35)] border-transparent"
+                      : isAssistant
+                        ? "neu-raised-xs rounded-2xl rounded-tl-md text-[color:var(--ink)] border-transparent"
+                        : "neu-accent-fill text-white rounded-2xl rounded-tr-md shadow-[4px_4px_10px_rgba(99,102,241,0.28),-4px_-4px_10px_rgba(255,255,255,0.9)] border-transparent",
+                ].join(" ")}
               >
                 {part.text}
               </div>
