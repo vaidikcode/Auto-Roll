@@ -3,12 +3,20 @@ import { z } from "zod";
 import { jsonSafe } from "@/lib/ai/json-safe";
 import { getAdminClient } from "@/lib/db/client";
 import { createBagPaymentLink } from "@/lib/bag/client";
+import { buildBagPaymentLinkPreview } from "@/lib/bag/mock-payment-link";
 import type { Employee, PayrollItem, ComplianceReport } from "@/lib/db/types";
+
+function useRealBag(): boolean {
+  return (
+    process.env.BAG_USE_REAL === "1" &&
+    Boolean(process.env.BAG_API_KEY?.trim())
+  );
+}
 
 export function makeCreatePaymentLinkTool(runId: string) {
   return tool({
     description:
-      "Create a Bag payment link for an approved employee. Generates a hosted checkout URL for the net payment amount, persists it to the database.",
+      "Create a Bag payment link for an approved employee. In demo mode (default) a hosted-style link is generated without calling Bag. Set BAG_USE_REAL=1 and BAG_API_KEY to call the live Bag API.",
     inputSchema: z.object({
       employee_id: z.string().describe("UUID of the employee to create a payment link for"),
     }),
@@ -32,27 +40,19 @@ export function makeCreatePaymentLinkTool(runId: string) {
       const compliance = complianceReport as ComplianceReport | null;
       const amount = item.net_usd;
 
-      let bagLink: { id: string; url: string } = {
-        id: `mock-${employee_id.slice(0, 8)}`,
-        url: `https://pay.getbags.app/mock/${employee_id.slice(0, 8)}`,
-      };
-
-      try {
-        const result = await createBagPaymentLink({
-          amount,
-          currency: "usd",
-          description: `Payroll — ${emp.name} — ${new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
-          metadata: {
-            employee_id,
-            run_id: runId,
-            employee_name: emp.name,
-            country: emp.country,
-          },
-        });
-        bagLink = { id: result.id, url: result.url };
-      } catch {
-        // Use mock URL when Bag API is unavailable
-      }
+      const bagLink = useRealBag()
+        ? await createBagPaymentLink({
+            amount,
+            currency: "usd",
+            description: `Payroll — ${emp.name} — ${new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
+            metadata: {
+              employee_id,
+              run_id: runId,
+              employee_name: emp.name,
+              country: emp.country,
+            },
+          })
+        : buildBagPaymentLinkPreview(runId, employee_id);
 
       const { data: linkRecord, error } = await db
         .from("payment_links")
@@ -88,7 +88,9 @@ export function makeCreatePaymentLinkTool(runId: string) {
         bag_link_id: bagLink.id,
         url: bagLink.url,
         compliance_status: compliance?.status ?? "clear",
-        compliance_steps_count: (compliance?.actionable_steps as unknown[])?.length ?? 0,
+        compliance_steps_count: Array.isArray(compliance?.actionable_steps)
+          ? compliance.actionable_steps.length
+          : 0,
         payment_link_id: linkRecord?.id,
       });
     },

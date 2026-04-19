@@ -73,10 +73,24 @@ export function PaymentLinkCard({ state, result }: PaymentLinkCardProps) {
             </div>
           </div>
 
-          {/* Link display */}
           <div className="flex items-center gap-2 p-2.5 rounded-lg bg-zinc-50 border border-zinc-200">
             <Link2 size={12} className="text-zinc-400 shrink-0" />
-            <span className="text-xs font-mono text-zinc-600 flex-1 truncate">{result.url}</span>
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-medium text-zinc-400 uppercase tracking-wide">
+                Hosted checkout
+              </div>
+              <span className="text-xs text-zinc-700 truncate block" title={result.url}>
+                {(() => {
+                  try {
+                    const u = new URL(result.url);
+                    const tail = u.pathname.length > 22 ? `${u.pathname.slice(0, 14)}…` : u.pathname;
+                    return `${u.host}${tail}`;
+                  } catch {
+                    return result.url.slice(0, 48);
+                  }
+                })()}
+              </span>
+            </div>
           </div>
 
           {/* Actions */}
@@ -114,10 +128,6 @@ export function PaymentLinkCard({ state, result }: PaymentLinkCardProps) {
             </div>
           )}
 
-          {/* Bag link ID */}
-          <div className="text-[10px] text-zinc-400 font-mono">
-            Bag ID: {result.bag_link_id}
-          </div>
         </div>
       ) : null}
     </ToolCardShell>

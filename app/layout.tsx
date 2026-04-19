@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Auto-Roll — AI Payroll Agent",
-  description: "AI-driven payroll automation. Collect, calculate, comply, and pay in one chat.",
+  title: "Auto-Roll — Guided payroll runs",
+  description:
+    "Walk through payroll on one screen: your team, pay breakdowns, plain-language rules, your approval, and how each person gets paid.",
 };
 
 export default function RootLayout({
