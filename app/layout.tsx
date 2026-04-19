@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Auto-Roll — AI Payroll Automation",
-  description:
-    "Autonomous AI-driven payroll SaaS. Run payroll, file taxes, and pay your team — fully automated.",
+  title: "Auto-Roll — AI Payroll Agent",
+  description: "AI-driven payroll automation. Collect, calculate, comply, and pay in one chat.",
 };
 
 export default function RootLayout({
@@ -13,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

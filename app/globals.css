@@ -1,38 +1,42 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap");
 @import "tailwindcss";
-@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap");
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-display: "Syne", sans-serif;
-  --font-mono: "DM Mono", monospace;
-  --font-sans: "DM Sans", sans-serif;
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
 :root {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card: #111113;
-  --card-foreground: #fafafa;
-  --popover: #111113;
-  --popover-foreground: #fafafa;
-  --primary: #f59e0b;
-  --primary-foreground: #09090b;
-  --secondary: #1c1c1f;
-  --secondary-foreground: #a1a1aa;
-  --muted: #1c1c1f;
+  --background: #ffffff;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+  --primary: #09090b;
+  --primary-foreground: #fafafa;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
   --muted-foreground: #71717a;
-  --accent: #f59e0b;
-  --accent-foreground: #09090b;
-  --destructive: #ef4444;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --destructive: #dc2626;
   --destructive-foreground: #fafafa;
-  --border: #27272a;
-  --input: #27272a;
-  --ring: #f59e0b;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #09090b;
   --radius: 0.5rem;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --info: #3b82f6;
+  --success: #16a34a;
+  --success-bg: #f0fdf4;
+  --warning: #ca8a04;
+  --warning-bg: #fefce8;
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+  --info: #2563eb;
+  --info-bg: #eff6ff;
 }
 
 * {
@@ -43,27 +47,54 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "DM Sans", sans-serif;
+  font-family: "Inter", sans-serif;
   font-feature-settings: "rlig" 1, "calt" 1;
   -webkit-font-smoothing: antialiased;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font-family: "Syne", sans-serif;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 code, pre, .font-mono {
-  font-family: "DM Mono", monospace;
+  font-family: "JetBrains Mono", monospace;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #27272a; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
 
-/* Smooth transitions */
-*, *::before, *::after {
-  transition-property: color, background-color, border-color, box-shadow;
-  transition-duration: 150ms;
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f4f4f5 25%, #e4e4e7 50%, #f4f4f5 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.pulse-dot {
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 0.75s linear infinite;
 }

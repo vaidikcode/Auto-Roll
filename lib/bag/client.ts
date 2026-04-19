@@ -1,57 +1,47 @@
-import { Bag } from "@tbagtapp/sdk";
+const BAG_BASE_URL = "https://api.getbags.app";
 
-let _bag: Bag | null = null;
-
-export function getBagClient(): Bag {
-  if (!_bag) {
-    _bag = new Bag({
-      apiKey: process.env.BAG_SECRET_KEY!,
-      maxRetries: 2,
-      timeout: 30_000,
-    });
-  }
-  return _bag;
+export interface BagPaymentLinkParams {
+  amount: number;
+  currency: string;
+  metadata?: Record<string, string>;
+  redirect_url?: string;
+  description?: string;
 }
 
-export const BAG_PLANS = {
-  starter: {
-    name: "Starter",
-    priceUsd: 49,
-    description: "Up to 10 employees. Core payroll automation.",
-    features: [
-      "Up to 10 active employees",
-      "Bi-weekly payroll runs",
-      "AI payroll agent",
-      "Pay stub generation",
-      "Basic compliance monitoring",
-    ],
-  },
-  growth: {
-    name: "Growth",
-    priceUsd: 149,
-    description: "Up to 50 employees. Full agent suite.",
-    features: [
-      "Up to 50 active employees",
-      "Unlimited payroll runs",
-      "Full AI agent suite",
-      "Anomaly detection",
-      "Employee Q&A assistant",
-      "Year-end tax packets",
-    ],
-  },
-  enterprise: {
-    name: "Enterprise",
-    priceUsd: 499,
-    description: "Unlimited employees. Priority support + x402.",
-    features: [
-      "Unlimited employees",
-      "Everything in Growth",
-      "Billing reconciliation agent",
-      "x402 agentic payroll endpoint",
-      "Dedicated support",
-      "Custom integrations",
-    ],
-  },
-} as const;
+export interface BagPaymentLinkResponse {
+  id: string;
+  url: string;
+  amount: number;
+  currency: string;
+  status: string;
+  created_at: string;
+}
 
-export type PlanKey = keyof typeof BAG_PLANS;
+export async function createBagPaymentLink(
+  params: BagPaymentLinkParams
+): Promise<BagPaymentLinkResponse> {
+  const apiKey = process.env.BAG_API_KEY;
+  if (!apiKey) throw new Error("BAG_API_KEY not configured");
+
+  const response = await fetch(`${BAG_BASE_URL}/v1/payment-links`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      amount: Math.round(params.amount * 100), // Bag uses cents
+      currency: params.currency.toLowerCase(),
+      metadata: params.metadata ?? {},
+      redirect_url: params.redirect_url,
+      description: params.description,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Bag API error ${response.status}: ${body}`);
+  }
+
+  return response.json();
+}
