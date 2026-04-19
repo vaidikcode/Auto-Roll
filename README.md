@@ -1,5 +1,128 @@
 # Auto-Roll — AI Payroll Agent
 
+Auto-Roll is an innovative AI-powered payroll agent designed to streamline and automate the entire payroll process for a company. It operates through a user-friendly chat interface where an HR professional can initiate and manage payroll with simple commands. The AI agent is designed to be autonomous, handling everything from data collection to payment, with a crucial human approval step built in for control and verification.
+
+## Features
+
+- **Conversational Interface:** Manage payroll through a simple, intuitive chat interface.
+- **Autonomous Operation:** The AI agent can handle the entire payroll process from start to finish.
+- **Tool-Based Architecture:** The AI uses a set of "tools" to perform specific tasks like collecting employee data, calculating payroll, and creating payment links.
+- **Human-in-the-Loop:** A crucial approval step ensures that you have the final say before payments are processed.
+- **Domestic & International Payroll:** The agent can handle both domestic and international payroll, including currency conversion and compliance checks.
+- **Extensible:** The tool-based architecture makes it easy to add new capabilities to the agent.
+
+## Technical Workflow
+
+The application's workflow is designed to be a seamless, conversational experience for the user, while the underlying technical implementation is a well-orchestrated sequence of events.
+
+```mermaid
+graph TD
+    subgraph "User Interface (Next.js Frontend)"
+        A[User visits /chat] --> B{Chat Interface};
+        B --> C[User sends message: "Run payroll"];
+        C --> D[useChat hook sends message to backend];
+        D --> E[Displays AI & tool responses];
+    end
+
+    subgraph "Backend (Next.js API Route)"
+        F[POST /api/chat] --> G{AI Model with System Prompt};
+        G --> H[Orchestrates payroll flow];
+    end
+
+    subgraph "AI Tools (lib/ai/tools)"
+        H --> I(collect_employees);
+        I --> J(calculate_domestic_payroll);
+        I --> K(fetch_fx_rate);
+        K --> L(check_cross_border_compliance);
+        L --> M(calculate_international_payroll);
+        J & M --> N(request_human_approval);
+        N --> O{Waits for user approval};
+        O -- Approved --> P(create_payment_link);
+    end
+
+    subgraph "Database (Supabase)"
+        I --> Q[Inserts into 'employees' table];
+        J --> R[Updates 'employees' table];
+        M --> R;
+        P --> S[Updates 'payroll_runs' status];
+    end
+
+## Getting Started
+
+To get a local copy up and running, follow these simple steps.
+
+### Prerequisites
+
+- Node.js
+- npm
+- A Supabase account
+- An OpenAI API key
+
+### Installation
+
+1.  Clone the repo
+    ```sh
+    git clone https://github.com/vaidikcode/Auto-Roll.git
+    ```
+2.  Install NPM packages
+    ```sh
+    npm install
+    ```
+3.  Set up your environment variables by creating a `.env.local` file in the root of the project and adding the following:
+    ```
+    OPENAI_API_KEY='Your OpenAI API Key'
+    SUPABASE_URL='Your Supabase Project URL'
+    SUPABASE_ANON_KEY='Your Supabase Anon Key'
+    ```
+4.  Run the database migrations in your Supabase SQL editor from the `supabase/migrations/0001_init.sql` file.
+
+### Usage
+
+1.  Start the development server
+    ```sh
+    npm run dev
+    ```
+2.  Open [http://localhost:3000/chat](http://localhost:3000/chat) with your browser to see the result.
+3.  Type "Run payroll" to start the payroll process.
+
+## Project Structure
+
+```
+/app
+  /api
+    /chat
+      route.ts      # Backend API for the chat interface
+  /chat
+    page.tsx        # Frontend for the chat interface
+/components
+  /chat
+    message.tsx     # Renders a single chat message
+    tool-cards      # Components for displaying tool outputs
+/lib
+  /ai
+    /tools          # AI tools for payroll tasks
+  /db
+    client.ts       # Supabase client
+/supabase
+  /migrations
+    0001_init.sql   # Database schema
+```
+
+## Contributing
+
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
+
+## License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+
 A chat-first HR payroll platform. One button releases payroll: the agent collects employees, calculates domestic/international pay, checks cross-border compliance, waits for human approval, and creates Bag payment links — all displayed as rich interactive UI cards.
 
 ## Stack
