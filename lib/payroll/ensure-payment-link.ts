@@ -44,15 +44,46 @@ export async function ensurePaymentLinkForEmployee(
     .eq("employee_id", employeeId)
     .maybeSingle();
 
-  const [{ data: employee }, { data: payrollItem }, { data: complianceReport }] =
-    await Promise.all([
-      db.from("employees").select("*").eq("id", employeeId).eq("run_id", runId).single(),
-      db.from("payroll_items").select("*").eq("employee_id", employeeId).eq("run_id", runId).single(),
-      db.from("compliance_reports").select("*").eq("employee_id", employeeId).eq("run_id", runId).maybeSingle(),
-    ]);
+  const [employeeRes, payrollItemRes, complianceRes] = await Promise.all([
+    db
+      .from("employees")
+      .select("*")
+      .eq("id", employeeId)
+      .eq("run_id", runId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    db
+      .from("payroll_items")
+      .select("*")
+      .eq("employee_id", employeeId)
+      .eq("run_id", runId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    db
+      .from("compliance_reports")
+      .select("*")
+      .eq("employee_id", employeeId)
+      .eq("run_id", runId)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
-  if (!employee || !payrollItem) {
-    throw new Error(`Employee or payroll item not found for ${employeeId}`);
+  const employee = employeeRes.data;
+  const payrollItem = payrollItemRes.data;
+  const complianceReport = complianceRes.data;
+
+  if (!employee) {
+    throw new Error(
+      `Employee not found for ${employeeId} on run ${runId}${employeeRes.error ? ` (${employeeRes.error.message})` : ""}`
+    );
+  }
+  if (!payrollItem) {
+    throw new Error(
+      `Payroll item not found for ${employeeId} on run ${runId}${payrollItemRes.error ? ` (${payrollItemRes.error.message})` : ""}. Re-run calculate_domestic_payroll / calculate_international_payroll before approving.`
+    );
   }
 
   const emp = employee as Employee;
@@ -80,15 +111,10 @@ export async function ensurePaymentLinkForEmployee(
 
   const bagLink = useRealBag()
     ? await createBagPaymentLink({
+        name: `Payroll — ${emp.name}`,
         amount,
-        currency: "usd",
-        description: `Payroll — ${emp.name} — ${new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
-        metadata: {
-          employee_id: employeeId,
-          run_id: runId,
-          employee_name: emp.name,
-          country: emp.country,
-        },
+        currency: "USD",
+        description: `Run ${runId.slice(0, 8)}… · ${emp.country} · ${new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
       })
     : buildBagPaymentLinkPreview(runId, employeeId);
 

@@ -1,17 +1,27 @@
 /**
- * Bag payment links — REST client.
- * @see https://docs.getbags.app/docs — use dashboard keys; set {@link BAG_API_BASE_URL} for sandbox if your project uses a separate host.
+ * Bag payment links — REST client (hosted checkout).
+ * @see https://docs.getbags.app/docs/guides/create-payment-link
+ *
+ * Endpoint: `POST {BAG_API_BASE_URL}/api/payment-links` (Bearer).
  */
 
-const DEFAULT_BAG_BASE = "https://api.getbags.app";
+/** Use `www` — `https://getbags.app` 301s here and fetch drops `Authorization` on that cross-origin redirect, causing false `AUTH_INVALID_JWT`. */
+const DEFAULT_BAG_ORIGIN = "https://www.getbags.app";
 
 export interface BagPaymentLinkParams {
+  /** Checkout title (required by Bag). */
+  name: string;
+  /** Price in USD (major units), per Bag API. */
   amount: number;
-  /** ISO currency code, e.g. "usd" */
-  currency: string;
-  metadata?: Record<string, string>;
-  redirect_url?: string;
+  /** ISO currency; defaults to USD. */
+  currency?: string;
   description?: string;
+  /** Sandbox/production network slug; defaults to `BAG_NETWORK` or `solana_devnet`. */
+  network?: string;
+  /** Optional multi-chain list; defaults to `BAG_NETWORKS` (comma-separated env). */
+  networks?: string[];
+  /** HTTPS redirect after payment (Bag field: `targetUrl`). */
+  targetUrl?: string;
 }
 
 export interface BagPaymentLinkResponse {
@@ -23,13 +33,37 @@ export interface BagPaymentLinkResponse {
   created_at?: string;
 }
 
-function bagBaseUrl(): string {
+function bagOrigin(): string {
   const raw = process.env.BAG_API_BASE_URL?.trim();
-  if (raw) return raw.replace(/\/$/, "");
-  return DEFAULT_BAG_BASE;
+  let origin = raw ? raw.replace(/\/$/, "") : DEFAULT_BAG_ORIGIN;
+  // Apex redirects to www; following that redirect strips Bearer (fetch / undici). Always call API on www.
+  if (origin === "https://getbags.app" || origin === "http://getbags.app") {
+    origin = "https://www.getbags.app";
+  }
+  return origin;
 }
 
-/** Normalize Bag / MoR JSON variants into id + hosted URL. */
+function defaultCheckoutUrl(linkId: string): string {
+  return `${bagOrigin()}/pay/${encodeURIComponent(linkId)}`;
+}
+
+function envNetworkList(): string[] | undefined {
+  const raw = process.env.BAG_NETWORKS?.trim();
+  if (!raw) return undefined;
+  const list = raw.split(",").map((s) => s.trim()).filter(Boolean);
+  return list.length ? list : undefined;
+}
+
+function resolvePrimaryNetwork(explicit?: string): string {
+  if (explicit?.trim()) return explicit.trim();
+  const fromEnv = process.env.BAG_NETWORK?.trim();
+  if (fromEnv) return fromEnv;
+  const list = envNetworkList();
+  if (list?.[0]) return list[0];
+  return "solana_devnet";
+}
+
+/** Normalize Bag JSON (including `{ data }` and camelCase) into id + hosted URL. */
 export function parseBagPaymentLinkResponse(json: unknown): BagPaymentLinkResponse {
   const j = json as Record<string, unknown>;
   const nested = (j.data ?? j.payment_link ?? j.result) as Record<string, unknown> | undefined;
@@ -47,28 +81,36 @@ export function parseBagPaymentLinkResponse(json: unknown): BagPaymentLinkRespon
       bag.hosted_url ??
       bag.payment_url ??
       bag.link ??
+      bag.checkoutUrl ??
       ""
   ).trim();
 
-  if (!id || !url) {
+  if (!id) {
     throw new Error(
-      `Bag API returned an unexpected shape (missing id/url). Raw: ${JSON.stringify(json).slice(0, 600)}`
+      `Bag API returned an unexpected shape (missing id). Raw: ${JSON.stringify(json).slice(0, 600)}`
     );
   }
 
+  const checkout = url || defaultCheckoutUrl(id);
+
   return {
     id,
-    url,
+    url: checkout,
     amount: typeof bag.amount === "number" ? bag.amount : undefined,
     currency: typeof bag.currency === "string" ? bag.currency : undefined,
     status: typeof bag.status === "string" ? bag.status : undefined,
-    created_at: typeof bag.created_at === "string" ? bag.created_at : undefined,
+    created_at:
+      typeof bag.created_at === "string"
+        ? bag.created_at
+        : typeof bag.createdAt === "string"
+          ? bag.createdAt
+          : undefined,
   };
 }
 
 /**
  * Create a hosted payment link. Uses `BAG_API_KEY` (Bearer).
- * Amount is sent in the smallest currency unit (e.g. USD cents), which is typical for payment APIs.
+ * Amount is USD major units (e.g. 49.0), matching Bag’s public API.
  */
 export async function createBagPaymentLink(
   params: BagPaymentLinkParams
@@ -80,17 +122,30 @@ export async function createBagPaymentLink(
     );
   }
 
-  /** Default `cents` (smallest currency unit). Set `BAG_AMOUNT_UNIT=dollars` if your Bag project expects decimal major units. */
-  const unit = process.env.BAG_AMOUNT_UNIT?.toLowerCase() === "dollars" ? "dollars" : "cents";
-  const amountPayload: number =
-    unit === "dollars" ? Math.round(params.amount * 100) / 100 : Math.round(params.amount * 100);
+  const amountPayload = Math.round(params.amount * 100) / 100;
   if (!Number.isFinite(amountPayload) || amountPayload <= 0) {
     throw new Error(`Invalid payment amount: ${params.amount}`);
   }
 
-  const base = bagBaseUrl();
+  const origin = bagOrigin();
+  const network = resolvePrimaryNetwork(params.network);
+  const envNetworks = envNetworkList();
+  const networks =
+    params.networks ??
+    (envNetworks && envNetworks.length > 1 ? envNetworks : undefined);
+
+  const body: Record<string, unknown> = {
+    name: params.name,
+    amount: amountPayload,
+    currency: (params.currency ?? "USD").toUpperCase(),
+    network,
+    ...(params.description ? { description: params.description } : {}),
+    ...(params.targetUrl ? { targetUrl: params.targetUrl } : {}),
+    ...(networks && networks.length ? { networks } : {}),
+  };
+
   const useXApiKey = process.env.BAG_AUTH_STYLE?.toLowerCase() === "x-api-key";
-  const response = await fetch(`${base}/v1/payment-links`, {
+  const response = await fetch(`${origin}/api/payment-links`, {
     method: "POST",
     headers: {
       ...(useXApiKey
@@ -98,13 +153,7 @@ export async function createBagPaymentLink(
         : { Authorization: `Bearer ${apiKey}` }),
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      amount: amountPayload,
-      currency: params.currency.toLowerCase(),
-      metadata: params.metadata ?? {},
-      redirect_url: params.redirect_url,
-      description: params.description,
-    }),
+    body: JSON.stringify(body),
   });
 
   const text = await response.text();

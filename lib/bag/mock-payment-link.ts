@@ -13,8 +13,7 @@ export function buildBagPaymentLinkPreview(
     .digest("hex")
     .slice(0, 24);
   const jitter = randomBytes(4).toString("hex");
-  const token = `${salt.slice(0, 16)}${jitter}`;
-  const id = `plink_${salt.slice(0, 20)}`;
-  const url = `https://pay.getbags.app/checkout/${token}`;
+  const id = `plink_${salt.slice(0, 20)}${jitter}`;
+  const url = `https://www.getbags.app/pay/${id}`;
   return { id, url };
 }
