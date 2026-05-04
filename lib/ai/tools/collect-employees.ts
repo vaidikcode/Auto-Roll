@@ -126,6 +126,21 @@ const MOCK_EMPLOYEES: Omit<Employee, "id" | "run_id" | "created_at">[] = [
     source: "PDF — Q2 Offer Letters.pdf",
     metadata: { department: "Sales", title: "Regional Director EMEA", hire_date: "2021-05-17" },
   },
+  {
+    name: "Test Contractor",
+    email: "test.contractor@acme.com",
+    country: "US",
+    currency: "USD",
+    base_salary_usd: 36,
+    employment_type: "domestic",
+    tax_locale: { state: "WY", state_tax_rate: 0, federal_filing_status: "single" },
+    dependents: 0,
+    benefits: { healthcare_plan: "none" },
+    retirement_match_pct: 0,
+    payout_destination: { type: "crypto", wallet: "0xTestWallet000000000000000000000000000000" },
+    source: "Manual",
+    metadata: { department: "QA", title: "Test Contractor", hire_date: "2026-01-01" },
+  },
 ];
 
 export function makeCollectEmployeesTool(runId: string) {
