@@ -138,6 +138,8 @@ export interface PaymentLink {
   currency: string;
   chain: string | null;
   status: PaymentLinkStatus;
+  tx_hash: string | null;
+  last_webhook_delivery_id: string | null;
   created_at: string;
   updated_at: string;
 }

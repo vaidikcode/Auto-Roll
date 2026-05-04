@@ -1,120 +1,38 @@
 /**
- * Bag payment links — REST client (hosted checkout).
- * @see https://docs.getbags.app/docs/guides/create-payment-link
+ * Bag V1 Checkout — REST client.
+ * @see https://docs.getbags.app/docs/getting-started/sample-integration
  *
- * Endpoint: `POST {BAG_API_BASE_URL}/api/payment-links` (Bearer).
+ * Endpoint: POST https://getbags.app/api/v1/checkout (Bearer auth)
+ * Body: { name, amount, network }
+ * Response: { status: "success", data: { id, url, ... } }
  */
 
-/** Use `www` — `https://getbags.app` 301s here and fetch drops `Authorization` on that cross-origin redirect, causing false `AUTH_INVALID_JWT`. */
-const DEFAULT_BAG_ORIGIN = "https://www.getbags.app";
+const DEFAULT_BAG_ORIGIN = "https://getbags.app";
 
-export interface BagPaymentLinkParams {
-  /** Checkout title (required by Bag). */
-  name: string;
-  /** Price in USD (major units), per Bag API. */
-  amount: number;
-  /** ISO currency; defaults to USD. */
-  currency?: string;
-  description?: string;
-  /** Sandbox/production network slug; defaults to `BAG_NETWORK` or `solana_devnet`. */
-  network?: string;
-  /** Optional multi-chain list; defaults to `BAG_NETWORKS` (comma-separated env). */
-  networks?: string[];
-  /** HTTPS redirect after payment (Bag field: `targetUrl`). */
-  targetUrl?: string;
-}
-
-export interface BagPaymentLinkResponse {
+export interface BagCheckout {
   id: string;
   url: string;
-  amount?: number;
-  currency?: string;
-  status?: string;
-  created_at?: string;
 }
 
 function bagOrigin(): string {
   const raw = process.env.BAG_API_BASE_URL?.trim();
-  let origin = raw ? raw.replace(/\/$/, "") : DEFAULT_BAG_ORIGIN;
-  // Apex redirects to www; following that redirect strips Bearer (fetch / undici). Always call API on www.
-  if (origin === "https://getbags.app" || origin === "http://getbags.app") {
-    origin = "https://www.getbags.app";
-  }
-  return origin;
+  return raw ? raw.replace(/\/$/, "") : DEFAULT_BAG_ORIGIN;
 }
 
-function defaultCheckoutUrl(linkId: string): string {
-  return `${bagOrigin()}/pay/${encodeURIComponent(linkId)}`;
-}
-
-function envNetworkList(): string[] | undefined {
-  const raw = process.env.BAG_NETWORKS?.trim();
-  if (!raw) return undefined;
-  const list = raw.split(",").map((s) => s.trim()).filter(Boolean);
-  return list.length ? list : undefined;
-}
-
-function resolvePrimaryNetwork(explicit?: string): string {
+function resolveNetwork(explicit?: string): string {
   if (explicit?.trim()) return explicit.trim();
-  const fromEnv = process.env.BAG_NETWORK?.trim();
-  if (fromEnv) return fromEnv;
-  const list = envNetworkList();
-  if (list?.[0]) return list[0];
-  return "solana_devnet";
-}
-
-/** Normalize Bag JSON (including `{ data }` and camelCase) into id + hosted URL. */
-export function parseBagPaymentLinkResponse(json: unknown): BagPaymentLinkResponse {
-  const j = json as Record<string, unknown>;
-  const nested = (j.data ?? j.payment_link ?? j.result) as Record<string, unknown> | undefined;
-  const bag = { ...j, ...(nested && typeof nested === "object" ? nested : {}) } as Record<
-    string,
-    unknown
-  >;
-
-  const id = String(
-    bag.id ?? bag.payment_link_id ?? bag.link_id ?? bag.payment_id ?? ""
-  ).trim();
-  const url = String(
-    bag.url ??
-      bag.checkout_url ??
-      bag.hosted_url ??
-      bag.payment_url ??
-      bag.link ??
-      bag.checkoutUrl ??
-      ""
-  ).trim();
-
-  if (!id) {
-    throw new Error(
-      `Bag API returned an unexpected shape (missing id). Raw: ${JSON.stringify(json).slice(0, 600)}`
-    );
-  }
-
-  const checkout = url || defaultCheckoutUrl(id);
-
-  return {
-    id,
-    url: checkout,
-    amount: typeof bag.amount === "number" ? bag.amount : undefined,
-    currency: typeof bag.currency === "string" ? bag.currency : undefined,
-    status: typeof bag.status === "string" ? bag.status : undefined,
-    created_at:
-      typeof bag.created_at === "string"
-        ? bag.created_at
-        : typeof bag.createdAt === "string"
-          ? bag.createdAt
-          : undefined,
-  };
+  return process.env.BAG_NETWORK?.trim() ?? "base_sepolia";
 }
 
 /**
- * Create a hosted payment link. Uses `BAG_API_KEY` (Bearer).
- * Amount is USD major units (e.g. 49.0), matching Bag’s public API.
+ * Create a V1 checkout session. Uses `BAG_API_KEY` (Bearer).
+ * Amount is USD major units (e.g. 49.0).
  */
-export async function createBagPaymentLink(
-  params: BagPaymentLinkParams
-): Promise<BagPaymentLinkResponse> {
+export async function createBagCheckout(params: {
+  name: string;
+  amount: number;
+  network?: string;
+}): Promise<BagCheckout> {
   const apiKey = process.env.BAG_API_KEY?.trim();
   if (!apiKey) {
     throw new Error(
@@ -122,51 +40,45 @@ export async function createBagPaymentLink(
     );
   }
 
-  const amountPayload = Math.round(params.amount * 100) / 100;
-  if (!Number.isFinite(amountPayload) || amountPayload <= 0) {
+  const amount = Math.round(params.amount * 100) / 100;
+  if (!Number.isFinite(amount) || amount <= 0) {
     throw new Error(`Invalid payment amount: ${params.amount}`);
   }
 
+  const network = resolveNetwork(params.network);
   const origin = bagOrigin();
-  const network = resolvePrimaryNetwork(params.network);
-  const envNetworks = envNetworkList();
-  const networks =
-    params.networks ??
-    (envNetworks && envNetworks.length > 1 ? envNetworks : undefined);
 
-  const body: Record<string, unknown> = {
-    name: params.name,
-    amount: amountPayload,
-    currency: (params.currency ?? "USD").toUpperCase(),
-    network,
-    ...(params.description ? { description: params.description } : {}),
-    ...(params.targetUrl ? { targetUrl: params.targetUrl } : {}),
-    ...(networks && networks.length ? { networks } : {}),
-  };
-
-  const useXApiKey = process.env.BAG_AUTH_STYLE?.toLowerCase() === "x-api-key";
-  const response = await fetch(`${origin}/api/payment-links`, {
+  const res = await fetch(`${origin}/api/v1/checkout`, {
     method: "POST",
     headers: {
-      ...(useXApiKey
-        ? { "x-api-key": apiKey }
-        : { Authorization: `Bearer ${apiKey}` }),
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ name: params.name, amount, network }),
   });
 
-  const text = await response.text();
+  const text = await res.text();
   let json: unknown;
   try {
     json = text ? JSON.parse(text) : {};
   } catch {
-    throw new Error(`Bag API returned non-JSON (${response.status}): ${text.slice(0, 400)}`);
+    throw new Error(`Bag API returned non-JSON (${res.status}): ${text.slice(0, 400)}`);
   }
 
-  if (!response.ok) {
-    throw new Error(`Bag API error ${response.status}: ${text.slice(0, 800)}`);
+  if (!res.ok) {
+    const msg = (json as Record<string, unknown>)?.message ?? text.slice(0, 800);
+    throw new Error(`Bag API error ${res.status}: ${msg}`);
   }
 
-  return parseBagPaymentLinkResponse(json);
+  const data = (json as Record<string, unknown>)?.data as Record<string, unknown> | undefined;
+  const id = String(data?.id ?? "").trim();
+  const url = String(data?.url ?? "").trim();
+
+  if (!id) {
+    throw new Error(
+      `Bag API returned unexpected shape (missing data.id). Raw: ${text.slice(0, 600)}`
+    );
+  }
+
+  return { id, url: url || `${origin}/pay/${encodeURIComponent(id)}` };
 }

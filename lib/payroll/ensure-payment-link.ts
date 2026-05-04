@@ -1,5 +1,5 @@
 import { getAdminClient } from "@/lib/db/client";
-import { createBagPaymentLink } from "@/lib/bag/client";
+import { createBagCheckout } from "@/lib/bag/client";
 import { buildBagPaymentLinkPreview } from "@/lib/bag/mock-payment-link";
 import type { Employee, PayrollItem, ComplianceReport } from "@/lib/db/types";
 
@@ -110,11 +110,9 @@ export async function ensurePaymentLinkForEmployee(
   }
 
   const bagLink = useRealBag()
-    ? await createBagPaymentLink({
+    ? await createBagCheckout({
         name: `Payroll — ${emp.name}`,
         amount,
-        currency: "USD",
-        description: `Run ${runId.slice(0, 8)}… · ${emp.country} · ${new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
       })
     : buildBagPaymentLinkPreview(runId, employeeId);
 

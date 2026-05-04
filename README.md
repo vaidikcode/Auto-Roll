@@ -159,7 +159,10 @@ Fill in `.env.local`:
 | `AI_GATEWAY_API_KEY` | [Vercel AI Gateway](https://vercel.com/docs/ai/ai-gateway) |
 | `NEXT_PUBLIC_SUPABASE_URL` | [Supabase project settings](https://app.supabase.com) → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase project settings → API → service_role |
-| `BAG_API_KEY` | [Bag dashboard](https://docs.getbags.app/docs) → sandbox keys |
+| `BAG_API_KEY` | [Bag dashboard](https://getbags.app/dashboard/developer) → Create API Key |
+| `BAG_WEBHOOK_SECRET` | [Bag dashboard → Webhooks](https://getbags.app/dashboard/webhooks) → add endpoint → copy secret |
+| `BAG_NETWORK` | Network slug, e.g. `base_sepolia` (default) or `base` for production |
+| `BAG_USE_REAL` | Set to `1` to call the real Bag API; omit for demo mode (no API call) |
 | `TAVILY_API_KEY` | [Tavily](https://tavily.com) (optional) |
 
 ### 3. Run database migrations
@@ -241,5 +244,5 @@ Each agent tool call renders as a rich UI component, not text:
 
 - No authentication — single-user demo mode
 - Payroll calculations use 2026 federal brackets and simplified state flat rates (demo accuracy)
-- Bag: by default demo hosted-style links are generated (no API call). Set `BAG_USE_REAL=1` and `BAG_API_KEY` to use the live Bag API.
+- Bag: by default demo checkout sessions are generated locally (no API call). Set `BAG_USE_REAL=1` + `BAG_API_KEY` + `BAG_WEBHOOK_SECRET` to use the live Bag v1 checkout API. Default network is `base_sepolia`; override with `BAG_NETWORK`.
 - Cross-border compliance uses Tavily when `TAVILY_API_KEY` is set (required for international checks).
