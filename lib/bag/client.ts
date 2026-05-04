@@ -7,7 +7,9 @@
  * Response: { status: "success", data: { id, url, ... } }
  */
 
-const DEFAULT_BAG_ORIGIN = "https://getbags.app";
+// Use www — https://getbags.app 301s to www and fetch converts POST→GET on that
+// redirect (HTTP spec), causing 405 Method Not Allowed on the checkout endpoint.
+const DEFAULT_BAG_ORIGIN = "https://www.getbags.app";
 
 export interface BagCheckout {
   id: string;
@@ -16,7 +18,12 @@ export interface BagCheckout {
 
 function bagOrigin(): string {
   const raw = process.env.BAG_API_BASE_URL?.trim();
-  return raw ? raw.replace(/\/$/, "") : DEFAULT_BAG_ORIGIN;
+  let origin = raw ? raw.replace(/\/$/, "") : DEFAULT_BAG_ORIGIN;
+  // Apex redirects to www; that 301 turns POST→GET in fetch, causing 405.
+  if (origin === "https://getbags.app" || origin === "http://getbags.app") {
+    origin = "https://www.getbags.app";
+  }
+  return origin;
 }
 
 function resolveNetwork(explicit?: string): string {
