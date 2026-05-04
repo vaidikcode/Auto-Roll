@@ -69,9 +69,10 @@ export async function POST(req: NextRequest) {
   const db = getAdminClient();
 
   switch (event) {
-    case "payment.completed":
-    case "payment.failed": {
-      const sessionId = data.sessionId;
+    // Bag dashboard emits checkout.* events
+    case "checkout.completed":
+    case "payment.completed": {
+      const sessionId = data.sessionId ?? data.checkoutId;
       if (!sessionId) break;
 
       const { data: existing } = await db
@@ -82,7 +83,6 @@ export async function POST(req: NextRequest) {
 
       if (!existing) break;
 
-      // Idempotency — skip if we've already processed this delivery
       if (
         webhookDeliveryId &&
         existing.last_webhook_delivery_id === webhookDeliveryId
@@ -90,26 +90,80 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true, deduped: true, webhookDeliveryId });
       }
 
-      if (event === "payment.completed") {
-        await db
-          .from("payment_links")
-          .update({
-            status: "paid",
-            tx_hash: data.txHash ?? null,
-            last_webhook_delivery_id: webhookDeliveryId ?? null,
-          })
-          .eq("id", existing.id);
-      } else {
-        await db
-          .from("payment_links")
-          .update({
-            status: "failed",
-            last_webhook_delivery_id: webhookDeliveryId ?? null,
-          })
-          .eq("id", existing.id);
-      }
+      await db
+        .from("payment_links")
+        .update({
+          status: "paid",
+          tx_hash: data.txHash ?? null,
+          last_webhook_delivery_id: webhookDeliveryId ?? null,
+        })
+        .eq("id", existing.id);
       break;
     }
+
+    case "checkout.failed":
+    case "payment.failed": {
+      const sessionId = data.sessionId ?? data.checkoutId;
+      if (!sessionId) break;
+
+      const { data: existing } = await db
+        .from("payment_links")
+        .select("id, status, last_webhook_delivery_id")
+        .eq("bag_link_id", sessionId)
+        .maybeSingle();
+
+      if (!existing) break;
+
+      if (
+        webhookDeliveryId &&
+        existing.last_webhook_delivery_id === webhookDeliveryId
+      ) {
+        return NextResponse.json({ received: true, deduped: true, webhookDeliveryId });
+      }
+
+      await db
+        .from("payment_links")
+        .update({
+          status: "failed",
+          last_webhook_delivery_id: webhookDeliveryId ?? null,
+        })
+        .eq("id", existing.id);
+      break;
+    }
+
+    case "checkout.expired": {
+      const sessionId = data.sessionId ?? data.checkoutId;
+      if (!sessionId) break;
+
+      const { data: existing } = await db
+        .from("payment_links")
+        .select("id, status, last_webhook_delivery_id")
+        .eq("bag_link_id", sessionId)
+        .maybeSingle();
+
+      if (!existing) break;
+
+      if (
+        webhookDeliveryId &&
+        existing.last_webhook_delivery_id === webhookDeliveryId
+      ) {
+        return NextResponse.json({ received: true, deduped: true, webhookDeliveryId });
+      }
+
+      await db
+        .from("payment_links")
+        .update({
+          status: "expired",
+          last_webhook_delivery_id: webhookDeliveryId ?? null,
+        })
+        .eq("id", existing.id);
+      break;
+    }
+
+    case "checkout.cancelled":
+    case "payment.refunded":
+      console.log(`[bag/webhook] ${event}`, data);
+      break;
 
     case "subscription.created":
     case "subscription.renewed":

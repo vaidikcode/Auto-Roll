@@ -246,3 +246,8 @@ Each agent tool call renders as a rich UI component, not text:
 - Payroll calculations use 2026 federal brackets and simplified state flat rates (demo accuracy)
 - Bag: by default demo checkout sessions are generated locally (no API call). Set `BAG_USE_REAL=1` + `BAG_API_KEY` + `BAG_WEBHOOK_SECRET` to use the live Bag v1 checkout API. Default network is `base_sepolia`; override with `BAG_NETWORK`.
 - Cross-border compliance uses Tavily when `TAVILY_API_KEY` is set (required for international checks).
+
+curl -X POST https://getbags.app/api/v1/checkout \
+  -H "Authorization: Bearer $BAG_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test Payment","amount":9.99,"network":"base_sepolia"}'
