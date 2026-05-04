@@ -131,7 +131,7 @@ const MOCK_EMPLOYEES: Omit<Employee, "id" | "run_id" | "created_at">[] = [
     email: "test.contractor@acme.com",
     country: "US",
     currency: "USD",
-    base_salary_usd: 36,
+    base_salary_usd: 3,
     employment_type: "domestic",
     tax_locale: { state: "WY", state_tax_rate: 0, federal_filing_status: "single" },
     dependents: 0,
