@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/db/client";
+import { CONSTANT_DISBURSEMENT_URL } from "@/lib/bag/mock-payment-link";
 import type { RunSnapshot } from "@/lib/db/types";
 
 export async function GET(
@@ -29,12 +30,19 @@ export async function GET(
     return NextResponse.json({ error: "Run not found" }, { status: 404 });
   }
 
+  // Force every disbursement link to the constant hosted Bag checkout, even
+  // for rows persisted before this rewrite. Keeps existing IDs intact.
+  const rewrittenPaymentLinks = (payment_links ?? []).map((pl) => ({
+    ...pl,
+    url: CONSTANT_DISBURSEMENT_URL,
+  }));
+
   const snapshot: RunSnapshot = {
     run,
     employees: employees ?? [],
     payroll_items: payroll_items ?? [],
     compliance_reports: compliance_reports ?? [],
-    payment_links: payment_links ?? [],
+    payment_links: rewrittenPaymentLinks,
     tool_events: (tool_events ?? []).reverse(), // chronological order
   };
 

@@ -1,6 +1,9 @@
 import { getAdminClient } from "@/lib/db/client";
 import { createBagCheckout } from "@/lib/bag/client";
-import { buildBagPaymentLinkPreview } from "@/lib/bag/mock-payment-link";
+import {
+  buildBagPaymentLinkPreview,
+  CONSTANT_DISBURSEMENT_URL,
+} from "@/lib/bag/mock-payment-link";
 import type { Employee, PayrollItem, ComplianceReport } from "@/lib/db/types";
 
 function useRealBag(): boolean {
@@ -99,7 +102,7 @@ export async function ensurePaymentLinkForEmployee(
       amount_usd: amount,
       currency: emp.currency,
       bag_link_id: existing.bag_link_id ?? "",
-      url: existing.url,
+      url: CONSTANT_DISBURSEMENT_URL,
       compliance_status: compliance?.status === "flagged" ? "flagged" : "clear",
       compliance_steps_count: Array.isArray(compliance?.actionable_steps)
         ? compliance.actionable_steps.length
@@ -116,13 +119,17 @@ export async function ensurePaymentLinkForEmployee(
       })
     : buildBagPaymentLinkPreview(runId, employeeId);
 
+  // All disbursement links route to the constant hosted Bag checkout, even
+  // when BAG_USE_REAL=1 returned a per-session URL above.
+  const checkoutUrl = CONSTANT_DISBURSEMENT_URL;
+
   const { data: linkRecord, error } = await db
     .from("payment_links")
     .insert({
       run_id: runId,
       employee_id: employeeId,
       bag_link_id: bagLink.id,
-      url: bagLink.url,
+      url: checkoutUrl,
       amount,
       currency: emp.currency,
       chain: emp.employment_type === "international" ? "base" : null,
@@ -138,7 +145,7 @@ export async function ensurePaymentLinkForEmployee(
       run_id: runId,
       tool_name: "create_payment_link",
       args: { employee_id: employeeId },
-      result: { url: bagLink.url, amount, currency: emp.currency },
+      result: { url: checkoutUrl, amount, currency: emp.currency },
       duration_ms: Date.now() - start,
     });
   }
@@ -150,7 +157,7 @@ export async function ensurePaymentLinkForEmployee(
     amount_usd: amount,
     currency: emp.currency,
     bag_link_id: bagLink.id,
-    url: bagLink.url,
+    url: checkoutUrl,
     compliance_status: compliance?.status === "flagged" ? "flagged" : "clear",
     compliance_steps_count: Array.isArray(compliance?.actionable_steps)
       ? compliance.actionable_steps.length
