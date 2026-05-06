@@ -15,37 +15,6 @@ Auto-Roll is an innovative AI-powered payroll agent designed to streamline and a
 
 The application's workflow is designed to be a seamless, conversational experience for the user, while the underlying technical implementation is a well-orchestrated sequence of events.
 
-```mermaid
-graph TD
-    subgraph "User Interface (Next.js Frontend)"
-        A[User visits /chat] --> B{Chat Interface};
-        B --> C[User sends message: "Run payroll"];
-        C --> D[useChat hook sends message to backend];
-        D --> E[Displays AI & tool responses];
-    end
-
-    subgraph "Backend (Next.js API Route)"
-        F[POST /api/chat] --> G{AI Model with System Prompt};
-        G --> H[Orchestrates payroll flow];
-    end
-
-    subgraph "AI Tools (lib/ai/tools)"
-        H --> I(collect_employees);
-        I --> J(calculate_domestic_payroll);
-        I --> K(fetch_fx_rate);
-        K --> L(check_cross_border_compliance);
-        L --> M(calculate_international_payroll);
-        J & M --> N(request_human_approval);
-        N --> O{Waits for user approval};
-        O -- Approved --> P(create_payment_link);
-    end
-
-    subgraph "Database (Supabase)"
-        I --> Q[Inserts into 'employees' table];
-        J --> R[Updates 'employees' table];
-        M --> R;
-        P --> S[Updates 'payroll_runs' status];
-    end
 
 ## Getting Started
 
