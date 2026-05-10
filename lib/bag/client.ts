@@ -35,7 +35,7 @@ function bagOrigin(): string {
 
 function resolveNetwork(explicit?: string): string {
   if (explicit?.trim()) return explicit.trim();
-  return process.env.BAG_NETWORK?.trim() ?? "base_sepolia";
+  return process.env.BAG_NETWORK?.trim() ?? "eth_sepolia";
 }
 
 /**

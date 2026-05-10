@@ -1,21 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/db/client";
-import { normalizePaymentLinksForSnapshot } from "@/lib/payroll/disbursement-checkout";
 import type { RunSnapshot } from "@/lib/db/types";
 
-function appOriginFromRequest(req: NextRequest): string | undefined {
-  const origin = req.headers.get("origin");
-  if (origin) return origin;
-
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
-  if (!host) return undefined;
-
-  const proto = req.headers.get("x-forwarded-proto") ?? "http";
-  return `${proto}://${host}`;
-}
-
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -46,10 +34,7 @@ export async function GET(
     employees: employees ?? [],
     payroll_items: payroll_items ?? [],
     compliance_reports: compliance_reports ?? [],
-    payment_links: normalizePaymentLinksForSnapshot(
-      payment_links ?? [],
-      appOriginFromRequest(req)
-    ),
+    payment_links: payment_links ?? [],
     tool_events: (tool_events ?? []).reverse(), // chronological order
   };
 
