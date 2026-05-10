@@ -1,52 +1,10 @@
+import { randomUUID } from "crypto";
 import { getAdminClient } from "@/lib/db/client";
-import { createBagCheckout } from "@/lib/bag/client";
-import { buildBagPaymentLinkPreview } from "@/lib/bag/mock-payment-link";
+import {
+  DISBURSEMENT_CHECKOUT_USD,
+  disbursementCheckoutUrl,
+} from "@/lib/payroll/disbursement-checkout";
 import type { Employee, PayrollItem, ComplianceReport } from "@/lib/db/types";
-
-const DEFAULT_APP_ORIGIN = "https://auto-roll.vercel.app";
-
-function shouldUseRealBag(): boolean {
-  return (
-    process.env.BAG_USE_REAL === "1" &&
-    Boolean(process.env.BAG_API_KEY?.trim())
-  );
-}
-
-function resolveAppOrigin(explicit?: string): string | null {
-  const candidates = [
-    explicit?.trim(),
-    process.env.NEXT_PUBLIC_APP_URL?.trim(),
-    process.env.APP_URL?.trim(),
-    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "",
-    DEFAULT_APP_ORIGIN,
-  ].filter(Boolean);
-
-  const origin = candidates.find((candidate) => {
-    try {
-      return new URL(candidate!).protocol === "https:";
-    } catch {
-      return false;
-    }
-  });
-
-  return origin ? origin.replace(/\/$/, "") : null;
-}
-
-function buildReturnUrl(
-  runId: string,
-  employeeId: string,
-  status: "completed" | "cancelled",
-  appOrigin?: string
-): string | undefined {
-  const origin = resolveAppOrigin(appOrigin);
-  if (!origin) return undefined;
-
-  const url = new URL(`/payroll/${runId}`, origin);
-  url.searchParams.set("tab", "payments");
-  url.searchParams.set("payment", status);
-  url.searchParams.set("employeeId", employeeId);
-  return url.toString();
-}
 
 export type PaymentLinkEnsureResult = {
   employee_name: string;
@@ -64,6 +22,7 @@ export type PaymentLinkEnsureResult = {
 
 /**
  * Creates a payment link row for one employee on a run, or returns the existing link.
+ * Every link is a fixed $2 in-app checkout at `/disburse/[paymentLinkId]` (simulated pay on visit).
  * Used by the AI tool and by POST /api/runs/:id/approve.
  */
 export async function ensurePaymentLinkForEmployee(
@@ -125,19 +84,28 @@ export async function ensurePaymentLinkForEmployee(
   }
 
   const emp = employee as Employee;
-  const item = payrollItem as PayrollItem;
   const compliance = complianceReport as ComplianceReport | null;
-  const amount = item.net_usd;
 
-  if (existing?.url) {
+  if (existing?.id) {
+    const url = disbursementCheckoutUrl(options?.appOrigin, existing.id);
+    if (
+      Number(existing.amount) !== DISBURSEMENT_CHECKOUT_USD ||
+      existing.url !== url
+    ) {
+      await db
+        .from("payment_links")
+        .update({ amount: DISBURSEMENT_CHECKOUT_USD, url })
+        .eq("id", existing.id);
+    }
+
     return {
       employee_name: emp.name,
       employee_id: emp.id,
       country: emp.country,
-      amount_usd: amount,
+      amount_usd: DISBURSEMENT_CHECKOUT_USD,
       currency: emp.currency,
-      bag_link_id: existing.bag_link_id ?? "",
-      url: existing.url,
+      bag_link_id: existing.bag_link_id ?? `sim:${existing.id}`,
+      url,
       compliance_status: compliance?.status === "flagged" ? "flagged" : "clear",
       compliance_steps_count: Array.isArray(compliance?.actionable_steps)
         ? compliance.actionable_steps.length
@@ -147,22 +115,19 @@ export async function ensurePaymentLinkForEmployee(
     };
   }
 
-  const bagLink = shouldUseRealBag()
-    ? await createBagCheckout({
-        name: `Payroll — ${emp.name}`,
-        amount,
-        returnUrl: buildReturnUrl(runId, employeeId, "completed", options?.appOrigin),
-      })
-    : buildBagPaymentLinkPreview(runId, employeeId);
+  const paymentLinkId = randomUUID();
+  const url = disbursementCheckoutUrl(options?.appOrigin, paymentLinkId);
+  const bag_link_id = `sim:${paymentLinkId}`;
 
   const { data: linkRecord, error } = await db
     .from("payment_links")
     .insert({
+      id: paymentLinkId,
       run_id: runId,
       employee_id: employeeId,
-      bag_link_id: bagLink.id,
-      url: bagLink.url,
-      amount,
+      bag_link_id,
+      url,
+      amount: DISBURSEMENT_CHECKOUT_USD,
       currency: emp.currency,
       chain: emp.employment_type === "international" ? "base" : null,
       status: "created",
@@ -177,7 +142,11 @@ export async function ensurePaymentLinkForEmployee(
       run_id: runId,
       tool_name: "create_payment_link",
       args: { employee_id: employeeId },
-      result: { url: bagLink.url, amount, currency: emp.currency },
+      result: {
+        url,
+        amount: DISBURSEMENT_CHECKOUT_USD,
+        currency: emp.currency,
+      },
       duration_ms: Date.now() - start,
     });
   }
@@ -186,10 +155,10 @@ export async function ensurePaymentLinkForEmployee(
     employee_name: emp.name,
     employee_id: employeeId,
     country: emp.country,
-    amount_usd: amount,
+    amount_usd: DISBURSEMENT_CHECKOUT_USD,
     currency: emp.currency,
-    bag_link_id: bagLink.id,
-    url: bagLink.url,
+    bag_link_id,
+    url,
     compliance_status: compliance?.status === "flagged" ? "flagged" : "clear",
     compliance_steps_count: Array.isArray(compliance?.actionable_steps)
       ? compliance.actionable_steps.length
