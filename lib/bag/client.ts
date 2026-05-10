@@ -16,6 +16,13 @@ export interface BagCheckout {
   url: string;
 }
 
+interface BagCheckoutRequest {
+  name: string;
+  amount: number;
+  network: string;
+  returnUrl?: string;
+}
+
 function bagOrigin(): string {
   const raw = process.env.BAG_API_BASE_URL?.trim();
   let origin = raw ? raw.replace(/\/$/, "") : DEFAULT_BAG_ORIGIN;
@@ -39,6 +46,7 @@ export async function createBagCheckout(params: {
   name: string;
   amount: number;
   network?: string;
+  returnUrl?: string;
 }): Promise<BagCheckout> {
   const apiKey = process.env.BAG_API_KEY?.trim();
   if (!apiKey) {
@@ -55,16 +63,24 @@ export async function createBagCheckout(params: {
   const network = resolveNetwork(params.network);
   const origin = bagOrigin();
 
+  const body: BagCheckoutRequest = {
+    name: params.name,
+    amount,
+    network,
+    ...(params.returnUrl ? { returnUrl: params.returnUrl } : {}),
+  };
+
   const res = await fetch(`${origin}/api/v1/checkout`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ name: params.name, amount, network }),
+    body: JSON.stringify(body),
   });
 
   const text = await res.text();
+
   let json: unknown;
   try {
     json = text ? JSON.parse(text) : {};

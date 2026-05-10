@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/db/client";
 import { ensurePaymentLinkForEmployee } from "@/lib/payroll/ensure-payment-link";
 
+function appOriginFromRequest(req: NextRequest): string | undefined {
+  const origin = req.headers.get("origin");
+  if (origin) return origin;
+
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  if (!host) return undefined;
+
+  const proto = req.headers.get("x-forwarded-proto") ?? "http";
+  return `${proto}://${host}`;
+}
+
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -55,7 +66,9 @@ export async function POST(
 
   for (const employeeId of employeeIds) {
     try {
-      const r = await ensurePaymentLinkForEmployee(id, employeeId);
+      const r = await ensurePaymentLinkForEmployee(id, employeeId, {
+        appOrigin: appOriginFromRequest(req),
+      });
       if (r.already_existed) skipped += 1;
       else created += 1;
     } catch (e) {

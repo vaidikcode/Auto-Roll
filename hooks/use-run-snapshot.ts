@@ -7,6 +7,7 @@ export function useRunSnapshot(runId: string | null, pollMs = 2000) {
   const [snapshot, setSnapshot] = useState<RunSnapshot | null>(null);
   const [loading, setLoading] = useState(false);
   const statusRef = useRef<string | null>(null);
+  const hasUnsettledPaymentsRef = useRef(false);
 
   const fetchSnapshot = useCallback(async () => {
     if (!runId) return;
@@ -16,6 +17,9 @@ export function useRunSnapshot(runId: string | null, pollMs = 2000) {
         const data: RunSnapshot = await res.json();
         setSnapshot(data);
         statusRef.current = data.run.status;
+        hasUnsettledPaymentsRef.current = data.payment_links.some(
+          (link) => link.status === "created"
+        );
       }
     } catch {
       // ignore
@@ -24,19 +28,27 @@ export function useRunSnapshot(runId: string | null, pollMs = 2000) {
 
   useEffect(() => {
     if (!runId) {
-      setSnapshot(null);
+      queueMicrotask(() => setSnapshot(null));
+      hasUnsettledPaymentsRef.current = false;
       return;
     }
-    setLoading(true);
+    queueMicrotask(() => setLoading(true));
     statusRef.current = null;
-    fetchSnapshot().finally(() => setLoading(false));
+    const initialFetch = setTimeout(() => {
+      void fetchSnapshot().finally(() => setLoading(false));
+    }, 0);
 
     const interval = setInterval(() => {
       const s = statusRef.current;
-      if (s !== "done" && s !== "rejected") fetchSnapshot();
+      if (s !== "rejected" && (s !== "done" || hasUnsettledPaymentsRef.current)) {
+        fetchSnapshot();
+      }
     }, pollMs);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialFetch);
+      clearInterval(interval);
+    };
   }, [runId, fetchSnapshot, pollMs]);
 
   return { snapshot, loading, refresh: fetchSnapshot };

@@ -1,16 +1,51 @@
 import { getAdminClient } from "@/lib/db/client";
 import { createBagCheckout } from "@/lib/bag/client";
-import {
-  buildBagPaymentLinkPreview,
-  CONSTANT_DISBURSEMENT_URL,
-} from "@/lib/bag/mock-payment-link";
+import { buildBagPaymentLinkPreview } from "@/lib/bag/mock-payment-link";
 import type { Employee, PayrollItem, ComplianceReport } from "@/lib/db/types";
 
-function useRealBag(): boolean {
+const DEFAULT_APP_ORIGIN = "https://auto-roll.vercel.app";
+
+function shouldUseRealBag(): boolean {
   return (
     process.env.BAG_USE_REAL === "1" &&
     Boolean(process.env.BAG_API_KEY?.trim())
   );
+}
+
+function resolveAppOrigin(explicit?: string): string | null {
+  const candidates = [
+    explicit?.trim(),
+    process.env.NEXT_PUBLIC_APP_URL?.trim(),
+    process.env.APP_URL?.trim(),
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "",
+    DEFAULT_APP_ORIGIN,
+  ].filter(Boolean);
+
+  const origin = candidates.find((candidate) => {
+    try {
+      return new URL(candidate!).protocol === "https:";
+    } catch {
+      return false;
+    }
+  });
+
+  return origin ? origin.replace(/\/$/, "") : null;
+}
+
+function buildReturnUrl(
+  runId: string,
+  employeeId: string,
+  status: "completed" | "cancelled",
+  appOrigin?: string
+): string | undefined {
+  const origin = resolveAppOrigin(appOrigin);
+  if (!origin) return undefined;
+
+  const url = new URL(`/payroll/${runId}`, origin);
+  url.searchParams.set("tab", "payments");
+  url.searchParams.set("payment", status);
+  url.searchParams.set("employeeId", employeeId);
+  return url.toString();
 }
 
 export type PaymentLinkEnsureResult = {
@@ -34,7 +69,7 @@ export type PaymentLinkEnsureResult = {
 export async function ensurePaymentLinkForEmployee(
   runId: string,
   employeeId: string,
-  options?: { recordToolEvent?: boolean }
+  options?: { recordToolEvent?: boolean; appOrigin?: string }
 ): Promise<PaymentLinkEnsureResult> {
   const recordToolEvent = options?.recordToolEvent !== false;
   const db = getAdminClient();
@@ -102,7 +137,7 @@ export async function ensurePaymentLinkForEmployee(
       amount_usd: amount,
       currency: emp.currency,
       bag_link_id: existing.bag_link_id ?? "",
-      url: CONSTANT_DISBURSEMENT_URL,
+      url: existing.url,
       compliance_status: compliance?.status === "flagged" ? "flagged" : "clear",
       compliance_steps_count: Array.isArray(compliance?.actionable_steps)
         ? compliance.actionable_steps.length
@@ -112,16 +147,13 @@ export async function ensurePaymentLinkForEmployee(
     };
   }
 
-  const bagLink = useRealBag()
+  const bagLink = shouldUseRealBag()
     ? await createBagCheckout({
         name: `Payroll — ${emp.name}`,
         amount,
+        returnUrl: buildReturnUrl(runId, employeeId, "completed", options?.appOrigin),
       })
     : buildBagPaymentLinkPreview(runId, employeeId);
-
-  // All disbursement links route to the constant hosted Bag checkout, even
-  // when BAG_USE_REAL=1 returned a per-session URL above.
-  const checkoutUrl = CONSTANT_DISBURSEMENT_URL;
 
   const { data: linkRecord, error } = await db
     .from("payment_links")
@@ -129,7 +161,7 @@ export async function ensurePaymentLinkForEmployee(
       run_id: runId,
       employee_id: employeeId,
       bag_link_id: bagLink.id,
-      url: checkoutUrl,
+      url: bagLink.url,
       amount,
       currency: emp.currency,
       chain: emp.employment_type === "international" ? "base" : null,
@@ -145,7 +177,7 @@ export async function ensurePaymentLinkForEmployee(
       run_id: runId,
       tool_name: "create_payment_link",
       args: { employee_id: employeeId },
-      result: { url: checkoutUrl, amount, currency: emp.currency },
+      result: { url: bagLink.url, amount, currency: emp.currency },
       duration_ms: Date.now() - start,
     });
   }
@@ -157,7 +189,7 @@ export async function ensurePaymentLinkForEmployee(
     amount_usd: amount,
     currency: emp.currency,
     bag_link_id: bagLink.id,
-    url: checkoutUrl,
+    url: bagLink.url,
     compliance_status: compliance?.status === "flagged" ? "flagged" : "clear",
     compliance_steps_count: Array.isArray(compliance?.actionable_steps)
       ? compliance.actionable_steps.length

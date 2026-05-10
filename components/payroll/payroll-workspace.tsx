@@ -19,7 +19,7 @@ import { PayslipsTab } from "@/components/payroll/tabs/payslips-tab";
 import { PaymentsTab } from "@/components/payroll/tabs/payments-tab";
 import { AssistantTab } from "@/components/payroll/tabs/assistant-tab";
 import { BillingTab } from "@/components/payroll/tabs/billing-tab";
-import { ChevronRight, Loader2, Play, UserPlus } from "lucide-react";
+import { CheckCircle, ChevronRight, Loader2, Play, UserPlus, X, XCircle } from "lucide-react";
 
 
 const ADD_PEOPLE_PROMPT =
@@ -29,6 +29,8 @@ export function PayrollWorkspace({ runId }: { runId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = parseGatewayTab(searchParams.get("tab"));
+  const paymentReturn = searchParams.get("payment");
+  const returnedEmployeeId = searchParams.get("employeeId");
 
   const setTab = useCallback(
     (t: GatewayTabId) => {
@@ -42,18 +44,14 @@ export function PayrollWorkspace({ runId }: { runId: string }) {
   );
 
   const { snapshot, loading, refresh } = useRunSnapshot(runId, 2200);
-  const runIdRef = useRef(runId);
-  useEffect(() => {
-    runIdRef.current = runId;
-  }, [runId]);
 
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: "/api/chat",
-        body: () => ({ runId: runIdRef.current }),
+        body: () => ({ runId }),
       }),
-    []
+    [runId]
   );
 
   const { messages, sendMessage, status, stop } = useChat({ transport });
@@ -81,6 +79,14 @@ export function PayrollWorkspace({ runId }: { runId: string }) {
     void refresh();
   }, [refresh]);
 
+  const dismissPaymentReturn = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("payment");
+    params.delete("employeeId");
+    const q = params.toString();
+    router.replace(q ? `/payroll/${runId}?${q}` : `/payroll/${runId}`, { scroll: false });
+  }, [router, runId, searchParams]);
+
   const handleReject = useCallback(() => {
     sendMessage({
       text: "I’m not approving this run. Please stop here.",
@@ -97,6 +103,12 @@ export function PayrollWorkspace({ runId }: { runId: string }) {
     if (tab !== "assistant") return;
     queueMicrotask(() => chatInputRef.current?.focus());
   }, [tab, assistFocusEpoch]);
+
+  useEffect(() => {
+    if (paymentReturn === "completed" || paymentReturn === "cancelled") {
+      void refresh();
+    }
+  }, [paymentReturn, refresh]);
 
   const statusLabel = snapshot?.run.status
     ? runStatusHr[snapshot.run.status].title
@@ -115,6 +127,14 @@ export function PayrollWorkspace({ runId }: { runId: string }) {
     }),
     [flaggedCount]
   );
+
+  const returnedEmployeeName = useMemo(() => {
+    if (!snapshot || !returnedEmployeeId) return null;
+    return snapshot.employees.find((employee) => employee.id === returnedEmployeeId)?.name ?? null;
+  }, [snapshot, returnedEmployeeId]);
+
+  const showPaymentReturn =
+    paymentReturn === "completed" || paymentReturn === "cancelled";
 
   return (
     <PayrollRunProvider
@@ -187,6 +207,45 @@ export function PayrollWorkspace({ runId }: { runId: string }) {
 
           <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden w-full">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 min-h-full">
+              {showPaymentReturn && (
+                <div
+                  className={`mb-6 border-2 px-4 py-3 shadow-[4px_4px_0_0_#18181b] ${
+                    paymentReturn === "completed"
+                      ? "border-emerald-900 bg-emerald-50 text-emerald-950"
+                      : "border-amber-900 bg-amber-50 text-amber-950"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    {paymentReturn === "completed" ? (
+                      <CheckCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                    ) : (
+                      <XCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-black uppercase tracking-wide">
+                        {paymentReturn === "completed"
+                          ? "Payment completed"
+                          : "Payment was not completed"}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold leading-relaxed">
+                        {paymentReturn === "completed"
+                          ? `Payroll successfully generated${
+                              returnedEmployeeName ? ` for ${returnedEmployeeName}` : ""
+                            }. Bag will confirm the final payment status by webhook.`
+                          : "You are back from Bag. The checkout can be reopened from the Payments tab."}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={dismissPaymentReturn}
+                      className="shrink-0 border-2 border-current bg-white/70 p-1 hover:bg-white"
+                      aria-label="Dismiss payment message"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
               {tab === "workflow" && <WorkflowTab />}
               {tab === "roster" && <RosterTab />}
               {tab === "compliance" && <ComplianceTab />}
