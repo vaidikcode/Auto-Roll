@@ -16,6 +16,7 @@ function shouldUseRealBag(): boolean {
   );
 }
 
+/** Full HTTPS URL Bag redirects to after pay; origin from request or NEXT_PUBLIC_APP_URL / APP_URL. */
 function buildBagReturnUrl(
   runId: string,
   employeeId: string,

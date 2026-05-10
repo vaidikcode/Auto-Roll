@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo } from "react";
 import { CheckCircle, Loader2 } from "lucide-react";
 
+/** Seconds to show the success screen after Bag redirects here, before returning to payroll. */
+const REDIRECT_DELAY_MS = 10_000;
+
 function PaymentConfirmedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -25,7 +28,7 @@ function PaymentConfirmedContent() {
   useEffect(() => {
     const timeout = setTimeout(() => {
       router.replace(workspaceHref);
-    }, 2200);
+    }, REDIRECT_DELAY_MS);
 
     return () => clearTimeout(timeout);
   }, [router, workspaceHref]);
@@ -40,11 +43,11 @@ function PaymentConfirmedContent() {
           Payment completed
         </h1>
         <p className="mt-3 text-base font-semibold leading-relaxed text-zinc-600">
-          Payroll successfully generated. Returning you to Auto-Roll now.
+          Payroll successfully generated. You&apos;ll return to Auto-Roll in a few seconds.
         </p>
         <div className="mt-7 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wide text-zinc-500">
           <Loader2 className="h-4 w-4 spinner text-zinc-900" />
-          Redirecting
+          Redirecting in ~10s
         </div>
         <Link
           href={workspaceHref}

@@ -3,7 +3,11 @@
  * @see https://docs.getbags.app/docs/getting-started/sample-integration
  *
  * Endpoint: POST https://getbags.app/api/v1/checkout (Bearer auth)
- * Body: { name, amount, network }
+ * Body: { name, amount, network, returnUrl?, targetUrl? }
+ * - returnUrl / targetUrl: full HTTPS URL on *your* origin for post-payment redirect.
+ *   Payment Links API docs call this `targetUrl` ([Create a Payment Link](https://docs.getbags.app/docs/guides/create-payment-link));
+ *   v1 checkout commonly accepts `returnUrl` — we send both when set so either naming matches the API.
+ *   Set app origin via NEXT_PUBLIC_APP_URL or APP_URL (see ensure-payment-link buildBagReturnUrl).
  * Response: { status: "success", data: { id, url, ... } }
  */
 
@@ -21,6 +25,8 @@ interface BagCheckoutRequest {
   amount: number;
   network: string;
   returnUrl?: string;
+  /** Same redirect as returnUrl per Bag payment-link naming (HTTPS only). */
+  targetUrl?: string;
 }
 
 function bagOrigin(): string {
@@ -63,11 +69,14 @@ export async function createBagCheckout(params: {
   const network = resolveNetwork(params.network);
   const origin = bagOrigin();
 
+  const redirect = params.returnUrl?.trim();
   const body: BagCheckoutRequest = {
     name: params.name,
     amount,
     network,
-    ...(params.returnUrl ? { returnUrl: params.returnUrl } : {}),
+    ...(redirect
+      ? { returnUrl: redirect, targetUrl: redirect }
+      : {}),
   };
 
   const res = await fetch(`${origin}/api/v1/checkout`, {
