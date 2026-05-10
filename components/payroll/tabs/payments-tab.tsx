@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { usePayrollRun } from "@/components/payroll/payroll-run-context";
+import { DisbursementVerifyBox } from "@/components/payroll/disbursement-verify-box";
 import { gatewayEmpty } from "@/lib/payroll/gateway-copy";
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ExternalLink, Copy, Check } from "lucide-react";
 
 export function PaymentsTab() {
-  const { snapshot, loading, effectiveSelectedIds } = usePayrollRun();
+  const { snapshot, loading, effectiveSelectedIds, refreshSnapshot } = usePayrollRun();
   const [copied, setCopied] = useState<string | null>(null);
 
   const links = useMemo(() => {
@@ -39,7 +40,7 @@ export function PaymentsTab() {
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Money</p>
         <h2 className="ar-font-display text-3xl font-black text-zinc-900 mt-1">Disbursements</h2>
         <p className="text-sm text-zinc-600 mt-2 max-w-xl leading-relaxed">
-          Checkout links—copy or open in a new tab.
+          Open Bag to pay, then use the confirmation link below to mark the run paid in Auto-Roll.
         </p>
       </header>
 
@@ -52,7 +53,7 @@ export function PaymentsTab() {
           {links.map(({ pl, emp }) => (
             <li
               key={pl.id}
-              className="border-2 border-zinc-900 bg-white px-5 py-5 flex flex-col sm:flex-row sm:items-center gap-4 shadow-[4px_4px_0_0_#18181b] hover:bg-zinc-50 transition-colors"
+              className="border-2 border-zinc-900 bg-white px-5 py-5 flex flex-col sm:flex-row sm:items-start gap-4 shadow-[4px_4px_0_0_#18181b] hover:bg-zinc-50 transition-colors"
             >
               <div className="min-w-0 flex-1">
                 <div className="font-black text-zinc-900 text-lg">{emp?.name ?? "Employee"}</div>
@@ -65,8 +66,9 @@ export function PaymentsTab() {
                 >
                   {pl.status}
                 </Badge>
+                <DisbursementVerifyBox pl={pl} refreshSnapshot={refreshSnapshot} />
               </div>
-              <div className="flex flex-wrap gap-2 shrink-0">
+              <div className="flex flex-wrap gap-2 shrink-0 sm:pt-1">
                 <Button
                   type="button"
                   size="sm"

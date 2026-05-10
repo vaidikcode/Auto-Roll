@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRunSnapshot } from "@/hooks/use-run-snapshot";
+import { DisbursementVerifyBox } from "@/components/payroll/disbursement-verify-box";
 import { formatCurrency, countryFlag } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,7 @@ export function EmployeePayrollDetail({
   runId: string;
   employeeId: string;
 }) {
-  const { snapshot, loading } = useRunSnapshot(runId, 2500);
+  const { snapshot, loading, refresh } = useRunSnapshot(runId, 2500);
   const emp = snapshot?.employees.find((e) => e.id === employeeId);
   const item = snapshot?.payroll_items.find((i) => i.employee_id === employeeId);
   const compliance = snapshot?.compliance_reports.find((c) => c.employee_id === employeeId);
@@ -248,6 +249,9 @@ export function EmployeePayrollDetail({
               </span>
               Disbursement link
             </h2>
+            <p className="text-xs text-zinc-600 leading-relaxed">
+              Pay on Bag first, then confirm below so this run shows as paid in Auto-Roll.
+            </p>
             <Button
               asChild
               size="lg"
@@ -255,9 +259,10 @@ export function EmployeePayrollDetail({
             >
               <a href={payLink.url ?? "#"} target="_blank" rel="noopener noreferrer">
                 <ExternalLink size={16} />
-                Open payment page · {formatCurrency(payLink.amount)}
+                Open Bag checkout · {formatCurrency(payLink.amount)}
               </a>
             </Button>
+            <DisbursementVerifyBox pl={payLink} refreshSnapshot={refresh} />
           </section>
         )}
       </div>

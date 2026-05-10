@@ -27,6 +27,8 @@ interface PayrollRunContextValue {
   clearSelection: () => void;
   /** Effective list of employee IDs for pipeline / payslips (all roster when mode=all) */
   effectiveSelectedIds: string[] | null;
+  /** Refetch run snapshot (e.g. after recording a payment). */
+  refreshSnapshot: () => void | Promise<void>;
 }
 
 const PayrollRunContext = createContext<PayrollRunContextValue | null>(null);
@@ -37,6 +39,7 @@ export function PayrollRunProvider({
   loading,
   tab,
   setTab,
+  refreshSnapshot,
   children,
 }: {
   runId: string;
@@ -44,6 +47,7 @@ export function PayrollRunProvider({
   loading: boolean;
   tab: GatewayTabId;
   setTab: (t: GatewayTabId) => void;
+  refreshSnapshot: () => void | Promise<void>;
   children: ReactNode;
 }) {
   const [selectionMode, setSelectionMode] = useState<SelectionMode>("all");
@@ -102,6 +106,7 @@ export function PayrollRunProvider({
       selectAllInRoster,
       clearSelection,
       effectiveSelectedIds,
+      refreshSnapshot,
     }),
     [
       runId,
@@ -115,6 +120,7 @@ export function PayrollRunProvider({
       selectAllInRoster,
       clearSelection,
       effectiveSelectedIds,
+      refreshSnapshot,
     ]
   );
 

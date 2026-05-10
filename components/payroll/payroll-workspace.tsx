@@ -143,6 +143,7 @@ export function PayrollWorkspace({ runId }: { runId: string }) {
       loading={loading}
       tab={tab}
       setTab={setTab}
+      refreshSnapshot={refresh}
     >
       <div className="ar-vault h-dvh min-h-0 flex flex-col overflow-hidden text-[color:var(--vault-ink)]">
         <div className="ar-vault-main flex flex-col min-h-0 flex-1">

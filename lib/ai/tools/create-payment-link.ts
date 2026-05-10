@@ -7,7 +7,7 @@ import { ensurePaymentLinkForEmployee } from "@/lib/payroll/ensure-payment-link"
 export function makeCreatePaymentLinkTool(runId: string) {
   return tool({
     description:
-      "Create a Bag v1 checkout session for an employee after the run is approved. Skips if a session already exists. In demo mode (default) a checkout session is generated locally without calling Bag. For the live Bag API set BAG_USE_REAL=1, BAG_API_KEY, and BAG_WEBHOOK_SECRET. Default network is eth_sepolia; override with BAG_NETWORK.",
+      "Create a $2 Bag checkout link plus an Auto-Roll verify URL (record payment after Bag). Skips if a link already exists. Demo mode uses a hosted Bag URL without calling the API; for live Bag set BAG_USE_REAL=1, BAG_API_KEY, and BAG_WEBHOOK_SECRET. Default network is eth_sepolia; override with BAG_NETWORK.",
     inputSchema: z.object({
       employee_id: z.string().describe("UUID of the employee to create a payment link for"),
     }),

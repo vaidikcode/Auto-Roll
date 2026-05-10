@@ -16,6 +16,7 @@ interface PaymentLinkResult {
   currency: string;
   bag_link_id: string;
   url: string;
+  verify_url?: string;
   compliance_status: "clear" | "flagged";
   compliance_steps_count: number;
 }
@@ -79,7 +80,7 @@ export function PaymentLinkCard({ state, result }: PaymentLinkCardProps) {
             <Link2 size={12} className="text-[color:var(--ink-soft)] shrink-0" />
             <div className="min-w-0 flex-1">
               <div className="text-[10px] font-semibold text-[color:var(--ink-soft)] uppercase tracking-[0.14em]">
-                Hosted checkout
+                Bag checkout
               </div>
               <span
                 className="text-xs text-[color:var(--ink-muted)] truncate block"
@@ -122,10 +123,24 @@ export function PaymentLinkCard({ state, result }: PaymentLinkCardProps) {
             >
               <a href={result.url} target="_blank" rel="noopener noreferrer">
                 <ExternalLink size={12} />
-                Open Link
+                Open Bag
               </a>
             </Button>
           </div>
+
+          {result.verify_url && (
+            <div className="flex items-center gap-2 p-3 rounded-xl neu-inset-sm">
+              <Link2 size={12} className="text-[color:var(--ink-soft)] shrink-0" />
+              <a
+                href={result.verify_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-semibold text-[color:var(--ink-muted)] underline underline-offset-2 hover:text-[color:var(--ink)]"
+              >
+                Record payment on Auto-Roll (after paying)
+              </a>
+            </div>
+          )}
 
           {/* Compliance callout */}
           {result.compliance_status === "flagged" && result.compliance_steps_count > 0 && (
