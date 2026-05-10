@@ -134,6 +134,8 @@ export interface PaymentLink {
   employee_id: string;
   bag_link_id: string | null;
   url: string | null;
+  /** In-app URL to record payment after Bag checkout (API-only, not stored). */
+  verify_url?: string | null;
   amount: number;
   currency: string;
   chain: string | null;

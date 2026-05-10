@@ -1,9 +1,13 @@
+import { randomUUID } from "crypto";
 import { getAdminClient } from "@/lib/db/client";
 import { createBagCheckout } from "@/lib/bag/client";
 import { buildBagPaymentLinkPreview } from "@/lib/bag/mock-payment-link";
+import {
+  DISBURSEMENT_CHECKOUT_USD,
+  disbursementCheckoutUrl,
+} from "@/lib/payroll/disbursement-checkout";
+import { defaultAppOrigin, resolveAppOrigin } from "@/lib/payroll/app-origin";
 import type { Employee, PayrollItem, ComplianceReport } from "@/lib/db/types";
-
-const DEFAULT_APP_ORIGIN = "https://auto-roll.vercel.app";
 
 function shouldUseRealBag(): boolean {
   return (
@@ -12,36 +16,15 @@ function shouldUseRealBag(): boolean {
   );
 }
 
-function resolveHttpsAppOrigin(explicit?: string): string {
-  const candidates = [
-    explicit?.trim(),
-    process.env.NEXT_PUBLIC_APP_URL?.trim(),
-    process.env.APP_URL?.trim(),
-    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "",
-    DEFAULT_APP_ORIGIN,
-  ].filter(Boolean) as string[];
-
-  const origin = candidates.find((candidate) => {
-    try {
-      return new URL(candidate).protocol === "https:";
-    } catch {
-      return false;
-    }
-  });
-
-  return (origin ?? DEFAULT_APP_ORIGIN).replace(/\/$/, "");
-}
-
-function buildReturnUrl(
+function buildBagReturnUrl(
   runId: string,
   employeeId: string,
-  status: "completed" | "cancelled",
   appOrigin?: string
 ): string {
-  const origin = resolveHttpsAppOrigin(appOrigin);
+  const origin = resolveAppOrigin(appOrigin) ?? defaultAppOrigin();
   const url = new URL("/payment-confirmed", origin);
   url.searchParams.set("runId", runId);
-  url.searchParams.set("payment", status);
+  url.searchParams.set("payment", "completed");
   url.searchParams.set("employeeId", employeeId);
   return url.toString();
 }
@@ -54,6 +37,7 @@ export type PaymentLinkEnsureResult = {
   currency: string;
   bag_link_id: string;
   url: string;
+  verify_url: string;
   compliance_status: "clear" | "flagged";
   compliance_steps_count: number;
   payment_link_id?: string;
@@ -61,8 +45,8 @@ export type PaymentLinkEnsureResult = {
 };
 
 /**
- * Creates a payment link row for one employee on a run, or returns the existing link.
- * Used by the AI tool and by POST /api/runs/:id/approve.
+ * Creates a $2 payment link: Bag checkout in `url`, Auto-Roll confirmation in `verify_url`.
+ * Live Bag sessions include returnUrl to /payment-confirmed when BAG_USE_REAL=1.
  */
 export async function ensurePaymentLinkForEmployee(
   runId: string,
@@ -123,19 +107,52 @@ export async function ensurePaymentLinkForEmployee(
   }
 
   const emp = employee as Employee;
-  const item = payrollItem as PayrollItem;
   const compliance = complianceReport as ComplianceReport | null;
-  const amount = item.net_usd;
 
-  if (existing?.url) {
+  if (existing?.id) {
+    const vUrl = disbursementCheckoutUrl(options?.appOrigin, existing.id);
+    let bagUrl = existing.url ?? "";
+    let bagId = existing.bag_link_id ?? `sim:${existing.id}`;
+
+    const hasBag = bagUrl.includes("getbags.app");
+    if (!hasBag) {
+      const bagLink = shouldUseRealBag()
+        ? await createBagCheckout({
+            name: `Payroll — ${emp.name}`,
+            amount: DISBURSEMENT_CHECKOUT_USD,
+            returnUrl: buildBagReturnUrl(runId, employeeId, options?.appOrigin),
+          })
+        : buildBagPaymentLinkPreview(runId, employeeId);
+      bagUrl = bagLink.url;
+      bagId = bagLink.id;
+    }
+
+    const needsRowUpdate =
+      !hasBag ||
+      Number(existing.amount) !== DISBURSEMENT_CHECKOUT_USD ||
+      existing.url !== bagUrl ||
+      existing.bag_link_id !== bagId;
+
+    if (needsRowUpdate) {
+      await db
+        .from("payment_links")
+        .update({
+          amount: DISBURSEMENT_CHECKOUT_USD,
+          url: bagUrl,
+          bag_link_id: bagId,
+        })
+        .eq("id", existing.id);
+    }
+
     return {
       employee_name: emp.name,
       employee_id: emp.id,
       country: emp.country,
-      amount_usd: amount,
+      amount_usd: DISBURSEMENT_CHECKOUT_USD,
       currency: emp.currency,
-      bag_link_id: existing.bag_link_id ?? "",
-      url: existing.url,
+      bag_link_id: bagId,
+      url: bagUrl,
+      verify_url: vUrl,
       compliance_status: compliance?.status === "flagged" ? "flagged" : "clear",
       compliance_steps_count: Array.isArray(compliance?.actionable_steps)
         ? compliance.actionable_steps.length
@@ -145,22 +162,26 @@ export async function ensurePaymentLinkForEmployee(
     };
   }
 
+  const paymentLinkId = randomUUID();
   const bagLink = shouldUseRealBag()
     ? await createBagCheckout({
         name: `Payroll — ${emp.name}`,
-        amount,
-        returnUrl: buildReturnUrl(runId, employeeId, "completed", options?.appOrigin),
+        amount: DISBURSEMENT_CHECKOUT_USD,
+        returnUrl: buildBagReturnUrl(runId, employeeId, options?.appOrigin),
       })
     : buildBagPaymentLinkPreview(runId, employeeId);
+
+  const vUrl = disbursementCheckoutUrl(options?.appOrigin, paymentLinkId);
 
   const { data: linkRecord, error } = await db
     .from("payment_links")
     .insert({
+      id: paymentLinkId,
       run_id: runId,
       employee_id: employeeId,
       bag_link_id: bagLink.id,
       url: bagLink.url,
-      amount,
+      amount: DISBURSEMENT_CHECKOUT_USD,
       currency: emp.currency,
       chain: emp.employment_type === "international" ? "base" : null,
       status: "created",
@@ -175,7 +196,12 @@ export async function ensurePaymentLinkForEmployee(
       run_id: runId,
       tool_name: "create_payment_link",
       args: { employee_id: employeeId },
-      result: { url: bagLink.url, amount, currency: emp.currency },
+      result: {
+        url: bagLink.url,
+        verify_url: vUrl,
+        amount: DISBURSEMENT_CHECKOUT_USD,
+        currency: emp.currency,
+      },
       duration_ms: Date.now() - start,
     });
   }
@@ -184,10 +210,11 @@ export async function ensurePaymentLinkForEmployee(
     employee_name: emp.name,
     employee_id: employeeId,
     country: emp.country,
-    amount_usd: amount,
+    amount_usd: DISBURSEMENT_CHECKOUT_USD,
     currency: emp.currency,
     bag_link_id: bagLink.id,
     url: bagLink.url,
+    verify_url: vUrl,
     compliance_status: compliance?.status === "flagged" ? "flagged" : "clear",
     compliance_steps_count: Array.isArray(compliance?.actionable_steps)
       ? compliance.actionable_steps.length
