@@ -7,7 +7,7 @@ import {
   disbursementCheckoutUrl,
 } from "@/lib/payroll/disbursement-checkout";
 import { defaultAppOrigin, resolveAppOrigin } from "@/lib/payroll/app-origin";
-import type { Employee, PayrollItem, ComplianceReport } from "@/lib/db/types";
+import type { Employee, ComplianceReport } from "@/lib/db/types";
 
 function shouldUseRealBag(): boolean {
   return (
